@@ -1,6 +1,8 @@
 # Progress
 
-## Phase 1: Foundation (in progress, see status at the bottom)
+## Phase 1: Foundation (complete)
+
+Live: https://coder-4847.github.io/PyPal/ (deploy run green: https://github.com/Coder-4847/PyPal/actions/runs/43920374168)
 
 Done
 - Vite + TypeScript scaffold, CSS tokens (spacing, radii, colours, motion), light and dark themes.
@@ -11,7 +13,7 @@ Done
 - Motion: intro (logo draws with real load progress, UI rises in), Run button morph (play, ring, stop, check, shake), terminal line reveal with 20 ms stagger and a softly blinking caret, theme circular reveal, `?motion=slow`.
 - GitHub Actions deploy workflow, README, DECISIONS.
 
-Verified locally (production build served without isolation headers, like GitHub Pages): 12 Playwright tests, 6 Vitest tests; Lighthouse desktop performance 100, accessibility 96 (contrast fixed afterwards), best practices 100.
+Verified on the live URL (Chromium): 13 Playwright tests pass (print, loops, Ctrl+Enter, inline input(), Stop on an infinite loop / sleep / print flood, errors, autosave, theme, split, phone layout, numpy auto-load); 6 Vitest tests; Lighthouse desktop performance 100, accessibility 100, best practices 100 (LCP 0.5 s, TBT 0 ms, CLS 0.001). Run the same suite with `E2E_URL=<live url> npm run test:e2e`.
 
 Next
 - Phase 2: friendly error cards, live syntax check, fix engine with verification, Fix all / Fix selection, diff preview, optional AI tier.

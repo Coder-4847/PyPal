@@ -134,3 +134,11 @@ test('phone layout stacks editor above terminal', async ({ page }) => {
   expect(t!.y).toBeGreaterThan(e!.y + e!.height - 2);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('numpy loads automatically when imported', async ({ page }) => {
+  await open(page);
+  await setCode(page, 'import numpy as np\nprint(np.arange(4).sum())\n');
+  await page.locator('#run').click();
+  await expect(term(page)).toContainText('6', { timeout: 80_000 });
+  await expect(page.locator('#run')).toHaveAttribute('data-state', /success|idle/);
+});
