@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import diagnose from './diagnose.py?raw';
 import harness from './harness.py?raw';
 import {
   INPUT_CANCEL,
@@ -22,6 +23,7 @@ const PACKAGE_CDN = `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/`
 type Pyodide = any;
 
 let pyodide: Pyodide;
+let mode: 'main' | 'sandbox' = 'main';
 let interrupt: Uint8Array | null = null;
 let inputCtl: Int32Array | null = null;
 let inputBytes: Uint8Array | null = null;
@@ -95,6 +97,13 @@ async function boot(base: string) {
   pyodide = await mod.loadPyodide({ indexURL: root, packageBaseUrl: PACKAGE_CDN });
   post({ type: 'progress', value: 0.97, label: 'Starting Python' });
 
+  pyodide.runPython(diagnose);
+  if (mode === 'sandbox') {
+    // The sandbox only test-runs code for the fix engine: output is thrown away.
+    pyodide.setStdout({ write: (b: Uint8Array) => b.length });
+    pyodide.setStderr({ write: (b: Uint8Array) => b.length });
+    return;
+  }
   pyodide.setStdout(sink('out'));
   pyodide.setStderr(sink('err'));
   if (interrupt) pyodide.setInterruptBuffer(interrupt);
@@ -177,9 +186,10 @@ async function run(id: number, code: string) {
       return;
     }
     const err: RunError = {
+      kind: 'runtime',
       type: 'InternalError',
       message: e instanceof Error ? e.message : String(e),
-      lineno: null, offset: null, endLineno: null, endOffset: null, text: null,
+      lineno: null, offset: null, endLineno: null, endOffset: null, text: null, suggestion: null,
       traceback: e instanceof Error ? (e.stack ?? e.message) : String(e),
     };
     post({ type: 'done', id, ok: false, stopped: false, error: err });
@@ -194,9 +204,27 @@ function isLoadedModule(name: string): boolean {
   }
 }
 
+/** Syntax check, plus (sandbox only) a test run with stubbed input() and a step limit. */
+async function analyze(id: number, code: string, runIt: boolean) {
+  try {
+    if (runIt && mode === 'sandbox') {
+      try {
+        await pyodide.loadPackagesFromImports(code);
+      } catch {
+        /* a missing package shows up as ModuleNotFoundError when the code runs */
+      }
+    }
+    const raw: string = pyodide.globals.get('analyze')(code, runIt && mode === 'sandbox');
+    post({ type: 'analyze-result', id, diag: JSON.parse(raw) });
+  } catch {
+    post({ type: 'analyze-result', id, diag: null });
+  }
+}
+
 self.onmessage = (ev: MessageEvent<ToWorker>) => {
   const msg = ev.data;
   if (msg.type === 'init') {
+    mode = msg.mode;
     if (msg.interruptBuffer) interrupt = new Uint8Array(msg.interruptBuffer);
     if (msg.inputBuffer) {
       inputSab = msg.inputBuffer;
@@ -209,5 +237,10 @@ self.onmessage = (ev: MessageEvent<ToWorker>) => {
     );
   } else if (msg.type === 'run') {
     void run(msg.id, msg.code);
+  } else if (msg.type === 'analyze') {
+    void analyze(msg.id, msg.code, msg.run);
+  } else if (msg.type === 'scope') {
+    const r = JSON.parse(pyodide.globals.get('scope_names')(msg.code)) as { bound: string[]; builtins: string[] };
+    post({ type: 'scope-result', id: msg.id, ...r });
   }
 };

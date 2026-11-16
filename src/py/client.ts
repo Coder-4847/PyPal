@@ -1,3 +1,4 @@
+import type { Diag } from '../fix/types';
 import {
   INPUT_BUFFER_BYTES,
   INPUT_CANCEL,
@@ -46,6 +47,8 @@ export class PyClient {
   private current: { id: number; resolve: (r: RunResult) => void } | null = null;
   private nextId = 1;
   private stopTimer: number | undefined;
+  private analyzeWaiters = new Map<number, (d: Diag | null) => void>();
+  private analyzeId = 0;
 
   constructor(private events: PyEvents, private base: string) {
     this.canInterrupt = typeof SharedArrayBuffer !== 'undefined' && self.crossOriginIsolated === true;
@@ -83,7 +86,7 @@ export class PyClient {
       this.spawn();
     };
     if (this.interrupt) this.interrupt[0] = 0;
-    this.post({ type: 'init', base: this.base, interruptBuffer: this.interruptSab, inputBuffer: this.inputSab });
+    this.post({ type: 'init', mode: 'main', base: this.base, interruptBuffer: this.interruptSab, inputBuffer: this.inputSab });
   }
 
   private post(msg: ToWorker) {
@@ -113,6 +116,10 @@ export class PyClient {
       case 'packages':
         this.events.packages(msg.state, msg.label);
         break;
+      case 'analyze-result':
+        this.analyzeWaiters.get(msg.id)?.(msg.diag);
+        this.analyzeWaiters.delete(msg.id);
+        break;
       case 'done':
         if (this.current && this.current.id === msg.id) {
           this.finish({ ok: msg.ok, stopped: msg.stopped, error: msg.error });
@@ -126,6 +133,19 @@ export class PyClient {
     const cur = this.current;
     this.current = null;
     cur?.resolve(result);
+  }
+
+  /**
+   * Live syntax check using Python's own compiler. Resolves undefined when it cannot
+   * check right now (Python still starting, or a program is running).
+   */
+  check(code: string): Promise<Diag | null | undefined> {
+    if (!this.ready || this.current) return Promise.resolve(undefined);
+    const id = ++this.analyzeId;
+    return new Promise((resolve) => {
+      this.analyzeWaiters.set(id, resolve);
+      this.post({ type: 'analyze', id, code, run: false });
+    });
   }
 
   whenReady(): Promise<void> {
@@ -186,6 +206,8 @@ export class PyClient {
 
 function crashError(message: string): RunError {
   return {
+    kind: 'runtime',
+    suggestion: null,
     type: 'WorkerCrash',
     message: message || 'The Python worker stopped unexpectedly.',
     lineno: null, offset: null, endLineno: null, endOffset: null, text: null,

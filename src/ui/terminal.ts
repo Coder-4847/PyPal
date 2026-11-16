@@ -1,3 +1,4 @@
+import { animate } from '../motion/motion';
 import { parseOutput } from './outputParser';
 
 /** Lines kept in the DOM. Older lines are dropped with a notice, so huge output stays fast. */
@@ -126,6 +127,17 @@ export class Terminal {
     note.className = 'term-line notice';
     note.textContent = 'Too much output: older lines were trimmed to keep PyPal fast.';
     this.root.prepend(note);
+  }
+
+  /** Append a block (an error card) after the output so far; it slides up into place. */
+  addCard(card: HTMLElement) {
+    this.flushNow();
+    this.cur = null;
+    this.lastSpan = null;
+    this.empty.remove();
+    this.root.append(card);
+    animate(card, [{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }], { duration: 'xslow', easing: 'emphasized' });
+    this.root.scrollTop = this.root.scrollHeight;
   }
 
   /** A muted status line, such as "Finished in 0.1s". */

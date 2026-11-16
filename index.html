@@ -55,6 +55,12 @@
         </div>
 
         <div class="topbar-end">
+          <button class="icon-btn" id="open-settings" type="button" aria-label="Settings" title="Settings" aria-haspopup="dialog">
+            <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+              <path d="M8.3 2.8h3.4l.5 2.1 1.3.7 2-.8 1.7 2.9-1.6 1.5v1.6l1.6 1.5-1.7 2.9-2-.8-1.3.7-.5 2.1H8.3l-.5-2.1-1.3-.7-2 .8-1.7-2.9 1.6-1.5V9.2L2.8 7.7l1.7-2.9 2 .8 1.3-.7z" />
+              <circle cx="10" cy="10" r="2.4" />
+            </svg>
+          </button>
           <button class="icon-btn" id="theme" type="button" aria-label="Switch theme" title="Switch theme">
             <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
               <g class="i-sun"><circle cx="10" cy="10" r="3.4" /><path d="M10 2.6v1.6M10 15.8v1.6M2.6 10h1.6M15.8 10h1.6M4.8 4.8l1.1 1.1M14.1 14.1l1.1 1.1M4.8 15.2l1.1-1.1M14.1 5.9l1.1-1.1" /></g>
@@ -68,9 +74,14 @@
         <section class="pane pane-editor" aria-label="Code editor" data-rise>
           <div class="pane-head">
             <h2 class="pane-title">main.py</h2>
+            <button class="btn btn-fix" id="fix-all" type="button" data-visible="false" tabindex="-1" aria-hidden="true" aria-keyshortcuts="Control+Shift+Enter Meta+Shift+Enter">
+              <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M4 16l8.5-8.5M11 3.5l1.2 2.3 2.3 1.2-2.3 1.2L11 10.5 9.8 8.2 7.5 7l2.3-1.2zM15.5 11l.6 1.2 1.2.6-1.2.6-.6 1.2-.6-1.2-1.2-.6 1.2-.6z" /></svg>
+              <span class="btn-fix-label">Fix all errors</span>
+            </button>
             <span class="pane-meta" id="save-state" aria-live="polite">Saved</span>
           </div>
           <div class="editor-host" id="editor"></div>
+          <div class="fix-sheet" id="fix-sheet" hidden></div>
         </section>
 
         <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize editor and terminal" aria-valuemin="20" aria-valuemax="80" aria-valuenow="55" tabindex="0" data-rise>
@@ -91,6 +102,36 @@
         </section>
       </main>
     </div>
+
+    <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+    <div class="sr-only" id="sr-live" aria-live="polite" aria-atomic="true"></div>
+
+    <dialog class="dialog" id="settings" aria-labelledby="settings-title">
+      <form class="dialog-body" method="dialog">
+        <h2 id="settings-title" class="dialog-title">Settings</h2>
+        <p class="dialog-lead">PyPal fixes most common mistakes by itself, with no account and nothing leaving your browser. For harder cases you can add your own AI key.</p>
+        <label class="field"><span>AI provider</span>
+          <select id="ai-provider">
+            <option value="anthropic">Anthropic</option>
+            <option value="openai">OpenAI</option>
+          </select>
+        </label>
+        <label class="field"><span>API key</span>
+          <input id="ai-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Paste your key (optional)" />
+        </label>
+        <label class="field"><span>Model <em>(optional)</em></span>
+          <input id="ai-model" type="text" autocomplete="off" spellcheck="false" />
+        </label>
+        <p class="dialog-privacy">Your key is saved only in this browser, in localStorage. It is sent only to <strong id="ai-host">api.anthropic.com</strong>, and only when you ask for an AI fix. PyPal never logs it and has no server of its own. Anyone using this browser profile could read it, so use a key with a low spending limit.</p>
+        <p class="dialog-status" id="ai-status" role="status"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-quiet" id="ai-remove">Remove key</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn" id="settings-close">Close</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </dialog>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

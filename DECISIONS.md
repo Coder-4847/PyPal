@@ -20,3 +20,20 @@ One line each. Newest at the bottom.
 - Vite `base` comes from `GITHUB_REPOSITORY` (or `BASE_PATH`), so assets load at `/<repo>/` on GitHub Pages.
 - The dev server sets COOP/COEP headers itself; production relies on the service worker. e2e tests run against `vite preview` with no headers to mimic GitHub Pages.
 - Playwright uses the sandbox's pre-installed Chromium when present (`/opt/pw-browsers/chromium`); CI does not run e2e in Phase 1 (unit tests, then build).
+
+## Phase 2
+- The fix engine is plain TypeScript (`src/fix/`) that talks to Python only through a small `FixEnv` interface, so the same engine runs in a browser worker and in Vitest against Pyodide in Node. `src/py/diagnose.py` is the single Python-side source of truth for both.
+- Rules propose minimal token-level edits; Python decides. Every candidate is checked with `ast.parse` + `compile`, and runtime fixes are re-run in a sandbox with a stubbed `input()` (returns "1") and a 400k-line step limit (`sys.settrace`). A test run that hits the limit counts as inconclusive, not as an error.
+- A candidate that only swaps one syntax error for another is accepted only if the new error is not located inside the edited region (so an edit that breaks itself is rejected). Tokenizer errors can surface before parser errors, so "later line" is not required.
+- Up to 8 passes; each pass keeps the first verified candidate. Offered results: `fixed` (compiles and runs clean) or `partial` (compiles, a runtime problem remains). A result that still fails to compile is never offered; the engine explains what is wrong and where instead.
+- Edits larger than half the file's non-blank lines are refused as "not a small fix" (also applied to AI answers). Code that raises nothing is never touched: logic bugs are out of scope.
+- `print(Word)` is quoted only when the name starts with an uppercase letter; `print(banana)` is explained, not rewritten.
+- Where an indented block is missing after `def`/`class`, the contiguous lines up to the first blank line are indented; after other headers only the first body line is.
+- Live syntax check runs in the main worker when idle (debounced 450 ms). It is skipped while a program runs because that worker is blocked.
+- The fix engine uses a second, lazily started worker (`SandboxClient`) so a running program is never disturbed and infinite loops in test runs can be killed. A failed sandbox throws; it is never treated as "verified".
+- Squiggles, hover tooltips and gutter dots are our own CodeMirror extensions (no `@codemirror/lint`), so the squiggle can draw in. Run-error marks clear when the code changes; syntax marks stay (mapped) until the next check.
+- The diff preview is a sheet over the editor. Accept-one recomputes the diff against the current document, so remaining changes stay valid. All edits are applied as one transaction tagged `input.fix`, so Ctrl+Z (or the toast's Undo) reverses an accept in one step.
+- AI tier: Anthropic or OpenAI, called directly from the browser with the user's key (stored in `localStorage` key `pypal:ai`). The model must answer JSON `{code, notes}`; the answer goes through the same verification and the same small-edit check. With no key the tier is invisible. Default models: `claude-haiku-5-5` and `gpt-4o-mini`.
+- Fix selection restricts candidates to edits inside the selected lines; a partial result is accepted when the problem left over is outside the selection.
+- Shortcuts added: Ctrl/Cmd+Shift+Enter fixes the selection, or the whole file when nothing is selected.
+- Fixture format: `name.broken.py` + `name.fixed.py` (exact expected output) and `name.keep.py` for code the engine must leave untouched. Phase 2 corpus: 96 cases; Phase 4 grows it to 150+.

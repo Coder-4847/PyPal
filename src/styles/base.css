@@ -159,6 +159,7 @@ button { font: inherit; color: inherit; }
 .pane-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-muted); letter-spacing: 0.01em; }
 .pane-meta { margin-left: auto; font-size: var(--text-xs); color: var(--text-faint); }
 .pane-head .btn-quiet { margin-left: 0; }
+.pane-head .btn-fix { margin-left: var(--space-1); }
 .pane-terminal .pane-meta { margin-left: auto; }
 
 .divider { position: relative; cursor: col-resize; touch-action: none; background: var(--surface-2); display: flex; justify-content: center; --ctl-radius: var(--radius-sm); }
