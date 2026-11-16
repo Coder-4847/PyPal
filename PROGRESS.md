@@ -1,5 +1,25 @@
 # Progress
 
+## Phase 2: Friendly errors and the fix engine (complete)
+
+Done
+- **Friendly errors:** every traceback becomes a card (what happened, where, hint); clicking it jumps to the line; raw traceback behind *Show details*. Explanations cover syntax variants, IndentationError/TabError, NameError, TypeError, ValueError, ZeroDivisionError, IndexError, KeyError, AttributeError, ModuleNotFoundError, RecursionError (`src/errors/explain.ts`).
+- **Live syntax check** (debounced 450 ms, Python's own compiler): squiggle draws in, hover gives a plain-English message, gutter dot pulses once.
+- **Fix engine** (`src/fix/`): local rules (colons, brackets, quotes, commas, indentation and tabs, `=` vs `==`, misspelled keywords/builtins/names, wrong case, Python 2 print, curly quotes, missing imports, `input()` as a number, text + number, off-by-one ranges, module typos), verification with `ast.parse` + `compile` and a sandboxed re-run (stubbed `input()`, step limit), up to 8 passes. A result that still fails to compile is never offered; otherwise PyPal says what looks wrong and where.
+- **Fix all errors** button and **Fix selection** floating toolbar (also Ctrl/Cmd+Shift+Enter), diff preview with one reason per changed line, per-change accept/skip, accept all, reject, Escape, Undo (one step).
+- **Optional AI tier:** Settings dialog (Anthropic or OpenAI key, stored in localStorage, sent only to the provider, never logged, hidden with no key). The model's answer goes through the same verification and small-edit check.
+- Motion moments 4 (card slides up, gutter pulse, squiggle draws in), 5 (broken lines shimmer, diff cards unfold, changed characters highlight, green wipe on accept, card collapses), 6 (toolbar springs in beside the selection, follows it, fades out).
+- Tests: 135 Vitest tests, including a corpus of 96 fixtures in `fixtures/broken/` (89 fix cases, 7 must-not-touch cases): 100% pass; 23 Playwright tests.
+
+Next
+- Phase 3: motion pass (moments 7 and 8, slow flag and reduced-motion checks), examples (six, one broken), share link, download/open `.py`, shortcut sheet, command palette, offline service worker + install, accessibility pass, mobile and speed, 404 page and meta.
+
+Known issues
+- The live check is skipped while a program is running (that worker is blocked); it resumes afterwards.
+- Fix selection needs the whole file to be fixable: if an earlier problem outside the selection cannot be fixed, nothing is offered for the selection.
+- Where an indented block is missing after `for`/`if`/`while`, only the first body line is indented (ambiguous otherwise); after `def`/`class` the lines up to the first blank line are.
+- The sandbox worker is a second Pyodide instance (extra memory); it starts only once a problem is detected.
+
 ## Phase 1: Foundation (complete)
 
 Live: https://coder-4847.github.io/PyPal/ (deploy run green: https://github.com/Coder-4847/PyPal/actions/runs/43920374168)
