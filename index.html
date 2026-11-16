@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>PyPal: your Python pal</title>
+    <meta name="description" content="PyPal is a free Python editor that runs in your browser. It explains errors in plain English and fixes broken code in one click. No sign-in, no ads." />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script src="/boot.js"></script>
+  </head>
+  <body>
+    <div id="splash" class="splash" role="status" aria-live="polite">
+      <svg class="splash-logo" viewBox="0 0 64 64" width="88" height="88" aria-hidden="true">
+        <path class="logo-track" pathLength="1" d="M20 54V12h14c10 0 16 6 16 14s-6 14-16 14H20" />
+        <path class="logo-draw" pathLength="1" d="M20 54V12h14c10 0 16 6 16 14s-6 14-16 14H20" />
+        <circle class="logo-dot" cx="46" cy="50" r="3.6" />
+      </svg>
+      <p class="splash-label"><span id="splash-text">Starting Python</span><span id="splash-pct" class="mono"></span></p>
+      <div id="splash-error" class="splash-error" hidden>
+        <p id="splash-error-text"></p>
+        <button class="btn" id="splash-reload" type="button">Reload</button>
+      </div>
+    </div>
+
+    <div class="app" id="app">
+      <header class="topbar" data-rise>
+        <a class="brand" href="./" aria-label="PyPal home">
+          <svg viewBox="0 0 64 64" width="26" height="26" aria-hidden="true">
+            <path class="brand-stroke" d="M20 54V12h14c10 0 16 6 16 14s-6 14-16 14H20" />
+            <circle class="brand-dot" cx="46" cy="50" r="3.6" />
+          </svg>
+          <span class="brand-name">PyPal</span>
+        </a>
+
+        <div class="topbar-center">
+          <button class="run" id="run" type="button" data-state="loading" aria-label="Run code" aria-keyshortcuts="Control+Enter Meta+Enter">
+            <span class="run-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" width="20" height="20">
+                <g class="i-play"><path d="M7 4.6v10.8a.6.6 0 0 0 .9.5l8.6-5.4a.6.6 0 0 0 0-1L7.9 4.1a.6.6 0 0 0-.9.5z" /></g>
+                <g class="i-ring"><circle class="ring-track" cx="10" cy="10" r="8" /><circle class="ring-arc" cx="10" cy="10" r="8" pathLength="100" /></g>
+                <g class="i-stop"><rect x="6.5" y="6.5" width="7" height="7" rx="1.6" /></g>
+                <g class="i-check"><path pathLength="1" d="M5 10.6l3.4 3.4L15.2 6.6" /></g>
+                <g class="i-err"><path d="M10 5.4v5.6M10 14.2v.1" /></g>
+              </svg>
+            </span>
+            <span class="run-label">
+              <span data-for="idle">Run</span>
+              <span data-for="loading">Loading</span>
+              <span data-for="running">Stop</span>
+              <span data-for="success">Done</span>
+              <span data-for="error">Error</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="topbar-end">
+          <button class="icon-btn" id="theme" type="button" aria-label="Switch theme" title="Switch theme">
+            <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+              <g class="i-sun"><circle cx="10" cy="10" r="3.4" /><path d="M10 2.6v1.6M10 15.8v1.6M2.6 10h1.6M15.8 10h1.6M4.8 4.8l1.1 1.1M14.1 14.1l1.1 1.1M4.8 15.2l1.1-1.1M14.1 5.9l1.1-1.1" /></g>
+              <g class="i-moon"><path d="M16.2 11.9A6.6 6.6 0 0 1 8.1 3.8a6.6 6.6 0 1 0 8.1 8.1z" /></g>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace" id="workspace">
+        <section class="pane pane-editor" aria-label="Code editor" data-rise>
+          <div class="pane-head">
+            <h2 class="pane-title">main.py</h2>
+            <span class="pane-meta" id="save-state" aria-live="polite">Saved</span>
+          </div>
+          <div class="editor-host" id="editor"></div>
+        </section>
+
+        <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize editor and terminal" aria-valuemin="20" aria-valuemax="80" aria-valuenow="55" tabindex="0" data-rise>
+          <span class="divider-line"></span>
+        </div>
+
+        <section class="pane pane-terminal" aria-label="Terminal" data-rise>
+          <div class="pane-head">
+            <h2 class="pane-title">Terminal</h2>
+            <span class="pane-meta mono" id="py-version"></span>
+            <button class="btn btn-quiet" id="clear" type="button">Clear</button>
+          </div>
+          <div class="progress" id="progress" hidden>
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <p class="progress-label" id="progress-label" hidden></p>
+          <div class="term" id="term" tabindex="0" role="log" aria-label="Program output" aria-relevant="additions"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
