@@ -2,6 +2,8 @@
 
 ## Phase 2: Friendly errors and the fix engine (complete)
 
+Live: https://coder-4847.github.io/PyPal/ (deploy green: https://github.com/Coder-4847/PyPal/actions/runs/43929071589). Verified on the live URL in Chromium: all 24 Playwright tests pass (Phase 1 and Phase 2, including Fix all, Fix selection, undo, honest failure, settings and the verified AI tier with a mocked provider); Lighthouse desktop 100 / 100 / 100 (performance, accessibility, best practices).
+
 Done
 - **Friendly errors:** every traceback becomes a card (what happened, where, hint); clicking it jumps to the line; raw traceback behind *Show details*. Explanations cover syntax variants, IndentationError/TabError, NameError, TypeError, ValueError, ZeroDivisionError, IndexError, KeyError, AttributeError, ModuleNotFoundError, RecursionError (`src/errors/explain.ts`).
 - **Live syntax check** (debounced 450 ms, Python's own compiler): squiggle draws in, hover gives a plain-English message, gutter dot pulses once.
@@ -9,7 +11,7 @@ Done
 - **Fix all errors** button and **Fix selection** floating toolbar (also Ctrl/Cmd+Shift+Enter), diff preview with one reason per changed line, per-change accept/skip, accept all, reject, Escape, Undo (one step).
 - **Optional AI tier:** Settings dialog (Anthropic or OpenAI key, stored in localStorage, sent only to the provider, never logged, hidden with no key). The model's answer goes through the same verification and small-edit check.
 - Motion moments 4 (card slides up, gutter pulse, squiggle draws in), 5 (broken lines shimmer, diff cards unfold, changed characters highlight, green wipe on accept, card collapses), 6 (toolbar springs in beside the selection, follows it, fades out).
-- Tests: 135 Vitest tests, including a corpus of 96 fixtures in `fixtures/broken/` (89 fix cases, 7 must-not-touch cases): 100% pass; 23 Playwright tests.
+- Tests: 135 Vitest tests, including a corpus of 96 fixtures in `fixtures/broken/` (89 fix cases, 7 must-not-touch cases): 100% pass; 24 Playwright tests. The AI tier is tested with a mocked provider only (no real key was used). In e2e, mock it with `context.route`, because the service worker issues the fetch and `page.route` cannot see it.
 
 Next
 - Phase 3: motion pass (moments 7 and 8, slow flag and reduced-motion checks), examples (six, one broken), share link, download/open `.py`, shortcut sheet, command palette, offline service worker + install, accessibility pass, mobile and speed, 404 page and meta.
@@ -41,4 +43,4 @@ Next
 Known issues
 - Package loading (numpy etc.) shows an indeterminate bar: Pyodide does not expose byte counts for wheels.
 - `asyncio.sleep` and threads are not patched for Stop; the 1.5 s restart fallback covers them.
-- Initial JS bundle is ~420 kB (mostly CodeMirror); code splitting is scheduled for Phase 3.
+- Initial JS bundle is ~490 kB (mostly CodeMirror); code splitting is scheduled for Phase 3.

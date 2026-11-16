@@ -191,7 +191,7 @@ test('AI tier: answers are verified before they are shown', async ({ page }) => 
   await open(page);
   await page.evaluate(() => localStorage.setItem('pypal:ai', JSON.stringify({ provider: 'anthropic', apiKey: 'sk-test', model: 'm' })));
   let calls = 0;
-  await page.route('https://api.anthropic.com/**', async (route) => {
+  await page.context().route('https://api.anthropic.com/**', async (route) => {
     calls++;
     const code = calls === 1 ? 'banana = "yellow"\nprint(banana)\n' : 'print(banana\n'; // 2nd answer does not compile
     await route.fulfill({
