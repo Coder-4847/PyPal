@@ -50,6 +50,25 @@ export function diffLines(a: string[], b: string[]): Hunk[] {
   return hunks;
 }
 
+/**
+ * Split a replaced block into one hunk per changed line, so each change can carry its own reason
+ * and be accepted on its own. Blocks whose line counts differ (insertions, deletions) stay whole.
+ */
+export function splitHunks(hunks: Hunk[], a: string[], b: string[]): Hunk[] {
+  const out: Hunk[] = [];
+  for (const h of hunks) {
+    const n = h.aEnd - h.aStart;
+    if (n > 1 && n === h.bEnd - h.bStart) {
+      for (let i = 0; i < n; i++) {
+        if (a[h.aStart + i] !== b[h.bStart + i]) {
+          out.push({ aStart: h.aStart + i, aEnd: h.aStart + i + 1, bStart: h.bStart + i, bEnd: h.bStart + i + 1 });
+        }
+      }
+    } else out.push(h);
+  }
+  return out;
+}
+
 export interface TextEdit {
   from: number;
   to: number;

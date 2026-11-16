@@ -96,7 +96,8 @@ test('syntax errors are reported with the line marked', async ({ page }) => {
   await setCode(page, 'print("a")\nif True\n    print("b")\n');
   await page.locator('#run').click();
   await expect(term(page)).toContainText('SyntaxError');
-  await expect(page.locator('.cm-errorLine')).toHaveCount(1);
+  await expect(page.locator('.cm-squiggle').first()).toBeVisible();
+  await expect(page.locator('.cm-err-dot').filter({ visible: true })).toHaveCount(1);
 });
 
 test('autosave restores code after reload', async ({ page }) => {

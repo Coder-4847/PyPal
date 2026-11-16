@@ -1,4 +1,4 @@
-import { applyHunks, diffLines } from './diff';
+import { applyHunks, diffLines, splitHunks } from './diff';
 import { offsetOf } from './lex';
 import { generateCandidates, makeCtx } from './rules';
 import type { Candidate, Change, Diag, FixEnv, FixResult, Hunk } from './types';
@@ -74,7 +74,7 @@ function carryReasons(prev: string[], next: string[], reasons: string[][], reaso
 export function buildChanges(original: string, fixed: string, reasons: string[][]): Change[] {
   const a = original.split('\n');
   const b = fixed.split('\n');
-  return diffLines(a, b).map((hunk: Hunk) => {
+  return splitHunks(diffLines(a, b), a, b).map((hunk: Hunk) => {
     let rs = reasons.slice(hunk.bStart, hunk.bEnd).flat();
     if (!rs.length && hunk.bStart < reasons.length) rs = reasons[hunk.bStart] ?? [];
     const unique = [...new Set(rs)];
@@ -129,8 +129,10 @@ async function fixSelection(original: string, env: FixEnv, scope: { from: number
   if (!isSmallEdit(original, subset)) return none(null);
 
   // re-express the kept changes against the original
-  const kept = diffLines(original.split('\n'), subset.split('\n'));
-  const reasonFor = (h: Hunk) => mine.find((c) => c.hunk.aStart === h.aStart || (c.hunk.aStart < h.aEnd && h.aStart < c.hunk.aEnd))?.reason ?? 'Changed to fix the problem';
+  const oLines = original.split('\n');
+  const sLines = subset.split('\n');
+  const kept = splitHunks(diffLines(oLines, sLines), oLines, sLines);
+  const reasonFor = (h: Hunk) => mine.find((c) => c.hunk.aStart === h.aStart && c.hunk.aEnd === h.aEnd)?.reason ?? mine.find((c) => c.hunk.aStart < h.aEnd && h.aStart < c.hunk.aEnd)?.reason ?? 'Changed to fix the problem';
   const changes: Change[] = kept.map((hunk) => ({ hunk, reason: reasonFor(hunk) }));
   return makeResult({ status: left ? 'partial' : 'fixed', original, code: subset, changes, steps: full.steps, remaining: left, initial: full.initial });
 }

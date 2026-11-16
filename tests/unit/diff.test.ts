@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyHunks, charDiff, diffLines } from '../../src/fix/diff';
+import { applyHunks, charDiff, diffLines, splitHunks } from '../../src/fix/diff';
 import { editDistance, nearest } from '../../src/fix/distance';
 import { tokenize } from '../../src/fix/lex';
 
@@ -25,6 +25,16 @@ describe('diffLines / applyHunks', () => {
     expect(hunks).toHaveLength(2);
     expect(applyHunks(a, b, [hunks[1]])).toBe('a\nb\nc\nD\ne');
     expect(applyHunks(a, b, [hunks[0]])).toBe('a\nB\nc\nd\ne');
+  });
+  it('splitHunks gives each changed line its own hunk, keeping insertions whole', () => {
+    const a = ['a', 'b', 'c', 'd'];
+    const b = ['a', 'B', 'c2', 'd'];
+    const hunks = splitHunks(diffLines(a, b), a, b);
+    expect(hunks).toHaveLength(2);
+    expect(applyHunks(a.join('\n'), b.join('\n'), [hunks[1]])).toBe('a\nb\nc2\nd');
+    const ins = ['x', 'y'];
+    const ins2 = ['x', 'n', 'y'];
+    expect(splitHunks(diffLines(ins, ins2), ins, ins2)).toHaveLength(1);
   });
   it('charDiff isolates the changed middle', () => {
     expect(charDiff('if x > 3', 'if x > 3:')).toEqual({ prefix: 8, oldEnd: 8, newEnd: 9 });

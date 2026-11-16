@@ -214,3 +214,15 @@ test('AI tier: answers are verified before they are shown', async ({ page }) => 
   await expect(sheet(page).locator('.hunk')).toHaveCount(0);
   expect(calls).toBe(2);
 });
+
+test('neighbouring fixes are separate changes, each with its own reason', async ({ page }) => {
+  await open(page);
+  await setCode(page, 'name = "Ada"\nfor i in range(3)\n    print("hi", nmae)\nif i > 1\n    print("done")\n');
+  await expect(fixAllBtn(page)).toHaveAttribute('data-visible', 'true');
+  await fixAllBtn(page).click();
+  const reasons = sheet(page).locator('.hunk .hunk-reason');
+  await expect(reasons).toHaveCount(3);
+  await expect(reasons.nth(0)).toContainText("colon after 'for'");
+  await expect(reasons.nth(1)).toContainText("'nmae' to 'name'");
+  await expect(reasons.nth(2)).toContainText("colon after 'if'");
+});

@@ -1,6 +1,6 @@
 import type { EditorHandle } from '../editor/editor';
 import type { Friendly } from '../errors/explain';
-import { charDiff, diffLines, hunkEdits } from '../fix/diff';
+import { charDiff, diffLines, hunkEdits, splitHunks } from '../fix/diff';
 import type { FixResult, Hunk } from '../fix/types';
 import { animate } from '../motion/motion';
 import { announce } from './announce';
@@ -161,7 +161,9 @@ export class FixSheet {
 
   private currentHunks(): Hunk[] {
     if (!this.res) return [];
-    return diffLines(this.d.editor.getCode().split('\n'), this.res.code.split('\n'));
+    const a = this.d.editor.getCode().split('\n');
+    const b = this.res.code.split('\n');
+    return splitHunks(diffLines(a, b), a, b);
   }
 
   private reasonFor(h: Hunk): string {
@@ -176,7 +178,7 @@ export class FixSheet {
     if (!res) return;
     const cur = this.d.editor.getCode().split('\n');
     const prop = res.code.split('\n');
-    const hunks = diffLines(cur, prop);
+    const hunks = splitHunks(diffLines(cur, prop), cur, prop);
     if (!hunks.length) return this.close();
 
     this.count.textContent = `${hunks.length} change${hunks.length === 1 ? '' : 's'}`;
@@ -259,7 +261,7 @@ export class FixSheet {
     if (!res) return;
     const cur = this.d.editor.getCode().split('\n');
     const prop = res.code.split('\n');
-    const hunks = diffLines(cur, prop);
+    const hunks = splitHunks(diffLines(cur, prop), cur, prop);
     this.d.editor.applyEdits(hunkEdits(cur, prop, hunks));
     this.d.editor.wipe(hunks.filter((h) => h.bEnd > h.bStart).map((h) => ({ from: h.bStart + 1, to: h.bEnd })));
     this.afterApply(hunks.length);

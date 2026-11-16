@@ -38,3 +38,13 @@ describe('Fix selection (scoped fix)', () => {
     expect(r.status).toBe('nothing');
   }, 60_000);
 });
+
+describe('changes carry one reason per changed line', () => {
+  it('adjacent fixes are separate changes, each with its own reason', async () => {
+    const env = await nodeEnv();
+    const r = await fixCode('name = 1\nfor i in range(3)\n    print("hi", nmae)\nif i > 1\n    print(1)\n', env);
+    expect(r.status).toBe('fixed');
+    expect(r.changes.length).toBe(3);
+    expect(r.changes.map((c) => c.reason).join('|')).toMatch(/colon.*\|.*nmae.*\|.*colon/);
+  }, 60_000);
+});
