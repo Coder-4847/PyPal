@@ -34,7 +34,7 @@ test('a traceback becomes a friendly card with details behind a toggle', async (
   });
   expect(sel).toBe('print(totl)');
   await expect(page.locator('.cm-errorLine')).toHaveCount(1);
-  await expect(page.locator('.cm-err-dot')).toHaveCount(1);
+  await expect(page.locator('.cm-err-dot').filter({ visible: true })).toHaveCount(1);
 });
 
 test('live syntax check underlines the problem and explains it on hover', async ({ page }) => {

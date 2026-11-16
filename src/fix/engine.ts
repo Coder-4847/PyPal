@@ -1,4 +1,4 @@
-import { diffLines } from './diff';
+import { applyHunks, diffLines } from './diff';
 import { offsetOf } from './lex';
 import { generateCandidates, makeCtx } from './rules';
 import type { Candidate, Change, Diag, FixEnv, FixResult, Hunk } from './types';
@@ -102,8 +102,41 @@ const makeResult = (r: Partial<FixResult> & Pick<FixResult, 'status' | 'original
  * because fixing one error often reveals the next.
  */
 export async function fixCode(original: string, env: FixEnv, opts: FixOptions = {}): Promise<FixResult> {
+  if (opts.scope) return fixSelection(original, env, opts.scope, opts.maxPasses);
+  return fixWhole(original, env, opts);
+}
+
+const overlaps = (h: Hunk, scope: { from: number; to: number }) =>
+  h.aEnd > h.aStart ? h.aStart + 1 <= scope.to && h.aEnd >= scope.from : h.aStart >= scope.from - 1 && h.aStart <= scope.to;
+
+/**
+ * Fix selection. Python reports one problem at a time, and an earlier problem outside the selection
+ * would hide the ones inside it. So the whole file is fixed first, then only the changes that touch the
+ * selected lines are kept, and the result is verified again: nothing may still be wrong inside the selection.
+ */
+async function fixSelection(original: string, env: FixEnv, scope: { from: number; to: number }, maxPasses?: number): Promise<FixResult> {
+  const full = await fixWhole(original, env, { maxPasses });
+  if (full.status === 'nothing') return full;
+  const none = (remaining: Diag | null): FixResult => makeResult({ status: 'none', original, remaining: remaining ?? full.remaining, initial: full.initial });
+  if (full.status === 'none') return none(null);
+
+  const mine = full.changes.filter((c) => overlaps(c.hunk, scope));
+  if (!mine.length) return none(null);
+  const subset = applyHunks(original, full.code, mine.map((c) => c.hunk));
+  const left = await env.diagnose(subset, { run: true });
+  const inside = left && left.lineno !== null && left.lineno >= scope.from && left.lineno <= scope.to + (subset.split('\n').length - original.split('\n').length);
+  if (inside) return none(left);
+  if (!isSmallEdit(original, subset)) return none(null);
+
+  // re-express the kept changes against the original
+  const kept = diffLines(original.split('\n'), subset.split('\n'));
+  const reasonFor = (h: Hunk) => mine.find((c) => c.hunk.aStart === h.aStart || (c.hunk.aStart < h.aEnd && h.aStart < c.hunk.aEnd))?.reason ?? 'Changed to fix the problem';
+  const changes: Change[] = kept.map((hunk) => ({ hunk, reason: reasonFor(hunk) }));
+  return makeResult({ status: left ? 'partial' : 'fixed', original, code: subset, changes, steps: full.steps, remaining: left, initial: full.initial });
+}
+
+async function fixWhole(original: string, env: FixEnv, opts: FixOptions): Promise<FixResult> {
   const maxPasses = opts.maxPasses ?? MAX_PASSES;
-  const scope = opts.scope;
   const first = await env.diagnose(original, { run: true });
   if (!first) return makeResult({ status: 'nothing', original });
   const result = (r: Partial<FixResult> & Pick<FixResult, 'status' | 'original'>) => makeResult({ ...r, initial: first });
@@ -121,7 +154,6 @@ export async function fixCode(original: string, env: FixEnv, opts: FixOptions = 
     let next: Diag | null = null;
     for (const cand of generateCandidates(ctx)) {
       if (seen.has(cand.code)) continue;
-      if (scope && !cand.lines.every((l) => l >= scope.from && l <= scope.to)) continue;
       const v = await verify(cur, cand, diag, env);
       if (v.ok) {
         chosen = cand;
@@ -143,14 +175,7 @@ export async function fixCode(original: string, env: FixEnv, opts: FixOptions = 
   const changes = buildChanges(original, cur, reasons);
   if (!diag) return result({ status: 'fixed', original, code: cur, changes, steps });
 
-  // Something still fails. Offer the progress only if the program still compiles
-  // (or, for Fix selection, if the problem left in the selected lines is gone).
-  if (scope) {
-    const outside = diag.lineno !== null && (diag.lineno < scope.from || diag.lineno > scope.to);
-    return outside
-      ? result({ status: 'partial', original, code: cur, changes, steps, remaining: diag })
-      : result({ status: 'none', original, remaining: diag });
-  }
+  // Something still fails. Offer the progress only if the program still compiles.
   if (diag.kind === 'syntax') return result({ status: 'none', original, remaining: diag });
   return result({ status: 'partial', original, code: cur, changes, steps, remaining: diag });
 }

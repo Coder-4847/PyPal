@@ -53,9 +53,9 @@ export class FixSheet {
     this.note = el('p', 'sheet-note');
     this.body = el('div', 'sheet-body');
     r.replaceChildren(head, this.note, this.body);
-    r.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.open && !e.defaultPrevented) {
+        e.preventDefault();
         this.reject();
       }
     });
@@ -250,7 +250,7 @@ export class FixSheet {
   /* ---------- decisions ---------- */
 
   private reject() {
-    announce('Fix discarded. Nothing changed.');
+    if (this.res) announce('Fix discarded. Nothing changed.');
     this.close();
   }
 
