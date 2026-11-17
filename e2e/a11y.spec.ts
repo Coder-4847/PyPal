@@ -12,6 +12,8 @@ const setCode = (page: Page, code: string) => page.evaluate((c) => (window as an
 
 /** Run axe on the current state and fail with a readable list. */
 async function audit(page: Page, label: string) {
+  // colours measured mid-fade are not the real colours: let every finite animation finish first
+  await page.evaluate(() => Promise.all(document.getAnimations().filter((a) => a.effect?.getTiming().iterations !== Infinity).map((a) => a.finished.catch(() => {}))));
   await page.addScriptTag({ path: axePath });
   const result = await page.evaluate(async () => {
     // @ts-expect-error axe is injected above
