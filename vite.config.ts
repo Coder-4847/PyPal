@@ -17,6 +17,9 @@ export default defineConfig({
   base,
   plugins: [pypalBuild()],
   server: { headers: isolation },
+  // `vite preview` would otherwise inherit the dev headers. Leave them off so previews behave like
+  // GitHub Pages: isolation comes from the service worker.
+  preview: { headers: {} },
   worker: { format: 'es' },
   build: { target: 'es2022', sourcemap: false },
   test: { include: ['tests/unit/**/*.test.ts', 'tests/**/*.test.ts'], environment: 'node' },

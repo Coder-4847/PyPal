@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { deflateRawSync } from 'node:zlib';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 
 async function open(page: Page, url = './') {
@@ -37,6 +39,9 @@ test.describe('examples and menus', () => {
     await page.locator('#fix-sheet').getByRole('button', { name: 'Accept all' }).click();
     await page.locator('#run').click();
     await expect(term(page)).toContainText('Hello, Ada!');
+    await page.locator('.term-input').fill('20');
+    await page.locator('.term-input').press('Enter');
+    await expect(term(page)).toContainText('You are a teenager or older.');
     await expect(term(page)).toContainText('The total is 6');
   });
 
@@ -62,7 +67,7 @@ test.describe('files and sharing', () => {
     const [download] = await Promise.all([page.waitForEvent('download'), page.keyboard.press('Control+s')]);
     expect(download.suggestedFilename()).toBe('main.py');
     const path = await download.path();
-    expect(require('node:fs').readFileSync(path, 'utf8')).toBe('print("download me")\n');
+    expect(readFileSync(path!, 'utf8')).toBe('print("download me")\n');
   });
 
   test('open a .py file replaces the code (undoable); binary files are refused', async ({ page }) => {
@@ -112,7 +117,7 @@ test.describe('files and sharing', () => {
 
   test('a hostile payload is shown as text, never run as HTML', async ({ page }) => {
     const evil = '<img src=x onerror="window.__pwned=1"><script>window.__pwned=1</script>\n# </textarea></style>\n';
-    const payload = require('node:zlib').deflateRawSync(Buffer.from(evil)).toString('base64url');
+    const payload = deflateRawSync(Buffer.from(evil)).toString('base64url');
     await page.goto(`./#c=v1.${payload}`);
     await expect(page.locator('#splash')).toHaveClass(/gone/);
     expect(await getCode(page)).toBe(evil);
@@ -169,9 +174,11 @@ test.describe('command palette and shortcuts', () => {
 
   test('Escape then Tab leaves the editor instead of trapping focus', async ({ page }) => {
     await open(page);
+    await setCode(page, 'x = 1\n');
     await page.locator('.cm-content').click();
+    await page.keyboard.press('Control+End');
     await page.keyboard.press('Tab');
-    expect(await getCode(page)).toMatch(/^ {4}/); // Tab indents
+    expect(await getCode(page)).toBe('x = 1\n    '); // Tab indents
     await page.keyboard.press('Escape');
     await page.keyboard.press('Tab');
     const inEditor = await page.evaluate(() => Boolean(document.activeElement?.closest('.cm-editor')));

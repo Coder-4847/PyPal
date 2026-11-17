@@ -81,6 +81,7 @@ const py = new PyClient(
           void splash.dismiss().then(() => {
             app.inert = false;
             editor.focus();
+            preloadWhenIdle();
           });
         }
       });
@@ -109,28 +110,42 @@ const py = new PyClient(
 );
 const runBtn = new RunButton($('run') as HTMLButtonElement, { run: () => runCode(), stop: () => stopCode() });
 
+/** Warm the lazy chunks once the page is idle, so Fix, the palette and dialogs open instantly. */
+function preloadWhenIdle() {
+  const run = () => {
+    void import('./app/fixFeature');
+    void import('./ui/palette');
+    void import('./ui/shortcuts');
+    void import('./ui/settings');
+  };
+  if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 5000 });
+  else window.setTimeout(run, 2000);
+}
+
 /* ============================ the editor (loads in parallel) ============================ */
 
-async function start() {
-  // A share link wins over saved code; the student's own code is kept so it can be restored.
+/**
+ * A share link (#c=...) wins over the saved code, but the student's own code is kept so it can be
+ * restored. Returns the shared code (if the link was good) and a toast to show once the editor exists.
+ */
+async function readShareLink(current: string | null): Promise<{ code: string | null; notice: () => void } | null> {
   const payload = shareHashPayload(location.hash);
-  let initial = loadSaved() ?? DEFAULT_CODE;
-  let sharedNotice: (() => void) | null = null;
-  if (payload !== null) {
-    const r = await decodeShare(payload);
-    history.replaceState(null, '', location.pathname + location.search);
-    if (r.ok) {
-      const mine = loadSaved();
-      if (mine && mine !== r.code) {
-        try { localStorage.setItem(PREVIOUS_KEY, mine); } catch { /* storage off */ }
-      }
-      initial = r.code;
-      sharedNotice = () =>
-        toast('Opened the code from the link.', mine && mine !== r.code ? { action: { label: 'Restore mine', run: () => editor.replaceDoc(mine) }, timeout: 12000 } : {});
-    } else {
-      sharedNotice = () => toast(`${r.reason} Your own code is untouched.`, { timeout: 7000 });
-    }
+  if (payload === null) return null;
+  const r = await decodeShare(payload);
+  history.replaceState(null, '', location.pathname + location.search); // so a reload does not re-apply it
+  if (!r.ok) return { code: null, notice: () => toast(`${r.reason} Your own code is untouched.`, { timeout: 7000 }) };
+  if (current && current !== r.code) {
+    try { localStorage.setItem(PREVIOUS_KEY, current); } catch { /* storage off */ }
   }
+  const restore = current && current !== r.code ? { action: { label: 'Restore mine', run: () => editor.replaceDoc(current) }, timeout: 12000 } : {};
+  return { code: r.code, notice: () => toast('Opened the code from the link.', restore) };
+}
+
+async function start() {
+  let initial = loadSaved() ?? DEFAULT_CODE;
+  const shared = await readShareLink(loadSaved());
+  if (shared?.code != null) initial = shared.code;
+  const sharedNotice = shared?.notice ?? null;
 
   const { createEditor } = await import('./editor/editor');
   let saveTimer = 0;
@@ -164,6 +179,13 @@ async function start() {
   $('editor').addEventListener('focusout', () => window.setTimeout(() => !editor.view.hasFocus && toolbar.hide(), 0));
   if (initial !== loadSaved()) save(initial);
   initDragAndDrop();
+  // pasting a share link into a tab that is already open only changes the hash
+  window.addEventListener('hashchange', async () => {
+    const s = await readShareLink(editor.getCode());
+    if (!s) return;
+    if (s.code != null) editor.replaceDoc(s.code);
+    s.notice();
+  });
   resolveEditor();
   sharedNotice?.();
   Object.assign(window, { __pypal: { editor, term, py } });
