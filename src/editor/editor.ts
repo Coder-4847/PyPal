@@ -1,5 +1,5 @@
 import { autocompletion, closeBrackets, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
-import { defaultKeymap, history, historyKeymap, indentWithTab, undo } from '@codemirror/commands';
+import { defaultKeymap, history, historyKeymap, indentLess, indentMore, undo } from '@codemirror/commands';
 import {
   HighlightStyle, bracketMatching, indentOnInput, indentUnit, syntaxHighlighting,
 } from '@codemirror/language';
@@ -7,7 +7,7 @@ import { python, pythonLanguage } from '@codemirror/lang-python';
 import { EditorState, Prec, RangeSet, type Range, StateEffect, StateField, Transaction, type Extension } from '@codemirror/state';
 import {
   Decoration, EditorView, GutterMarker, drawSelection, gutter, highlightActiveLine, highlightActiveLineGutter,
-  hoverTooltip, keymap, lineNumbers, type DecorationSet,
+  hoverTooltip, keymap, lineNumbers, placeholder, type DecorationSet,
 } from '@codemirror/view';
 import { tags as t } from '@lezer/highlight';
 import { motionScale } from '../motion/motion';
@@ -194,6 +194,8 @@ export interface EditorHandle {
   view: EditorView;
   getCode(): string;
   setCode(code: string): void;
+  /** Replace the whole file as one undoable change (examples, opened files, shared links). */
+  replaceDoc(code: string): void;
   setDiagnostics(source: DiagSource, marks: DiagMark[], fresh: boolean): void;
   /** Convert 1-based line / column (as Python reports them) to a document offset. */
   offsetAt(line: number, col1: number): number;
@@ -215,10 +217,13 @@ export interface EditorOptions {
   onRun(): void;
   onStop(): void;
   onFix?(): void;
+  /** Spoken to screen-reader users (e.g. "Tab now moves focus"). */
+  onNote?(message: string): void;
   extensions?: Extension[];
 }
 
 export function createEditor(opts: EditorOptions): EditorHandle {
+  let releaseTab = false;
   const extensions: Extension[] = [
     lineNumbers(),
     highlightActiveLineGutter(),
@@ -246,7 +251,17 @@ export function createEditor(opts: EditorOptions): EditorHandle {
         { key: 'Mod-Shift-Enter', run: () => (opts.onFix?.(), true) },
       ]),
     ),
-    keymap.of([...closeBracketsKeymap, ...completionKeymap, ...historyKeymap, ...defaultKeymap, indentWithTab]),
+    keymap.of([
+      ...closeBracketsKeymap,
+      ...completionKeymap,
+      ...historyKeymap,
+      ...defaultKeymap,
+      // Keyboard users must never get trapped: Escape, then Tab, moves focus out of the editor.
+      { key: 'Escape', run: () => ((releaseTab = true), opts.onNote?.('Tab now moves focus out of the editor.'), true) },
+      { key: 'Tab', run: (v) => (releaseTab ? ((releaseTab = false), false) : indentMore(v)), shift: (v) => (releaseTab ? ((releaseTab = false), false) : indentLess(v)) },
+    ]),
+    placeholder('Type some Python here, or pick an example from the Examples menu.'),
+    EditorView.domEventHandlers({ blur: () => void (releaseTab = false) }),
     EditorView.updateListener.of((u) => {
       if (u.docChanged) opts.onChange(u.state.doc.toString());
     }),
@@ -263,6 +278,9 @@ export function createEditor(opts: EditorOptions): EditorHandle {
     getCode: () => view.state.doc.toString(),
     setCode(code) {
       view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code } });
+    },
+    replaceDoc(code) {
+      view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: code }, selection: { anchor: 0 }, scrollIntoView: true, annotations: Transaction.userEvent.of('input.replace') });
     },
     setDiagnostics(source, marks, fresh) {
       view.dispatch({ effects: setDiagnostics.of({ source, marks, fresh }) });

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitest/config';
+import { pypalBuild } from './scripts/vite-plugin-pypal.ts';
 
 // Assets must load at https://<user>.github.io/<repo>/ on GitHub Pages, so the
 // base comes from the repository name (set automatically in Actions).
@@ -14,6 +15,7 @@ const isolation = {
 
 export default defineConfig({
   base,
+  plugins: [pypalBuild()],
   server: { headers: isolation },
   worker: { format: 'es' },
   build: { target: 'es2022', sourcemap: false },

@@ -45,7 +45,13 @@ export function initSplit(workspace: HTMLElement, divider: HTMLElement) {
     divider.addEventListener('pointercancel', up);
   });
 
+  const glide = () => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    workspace.classList.add('gliding');
+    window.setTimeout(() => workspace.classList.remove('gliding'), 260 * (document.documentElement.dataset.motion === 'slow' ? 5 : 1));
+  };
   divider.addEventListener('keydown', (e) => {
+    glide();
     const dec = mobile.matches ? 'ArrowUp' : 'ArrowLeft';
     const inc = mobile.matches ? 'ArrowDown' : 'ArrowRight';
     if (e.key === dec) set(value - 3, true);

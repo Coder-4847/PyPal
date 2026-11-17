@@ -140,6 +140,16 @@ export class Terminal {
     this.root.scrollTop = this.root.scrollHeight;
   }
 
+  /** The last few lines of output as plain text, for screen-reader announcements. */
+  summary(): string {
+    const lines = Array.from(this.root.querySelectorAll('.term-line:not(.status):not(.notice)'))
+      .map((l) => l.textContent ?? '')
+      .filter((t) => t.trim());
+    if (!lines.length) return 'It printed nothing.';
+    const tail = lines.slice(-3).join('. ').slice(0, 240);
+    return `${lines.length} line${lines.length === 1 ? '' : 's'} of output. Last: ${tail}`;
+  }
+
   /** A muted status line, such as "Finished in 0.1s". */
   status(text: string, kind: 'ok' | 'bad' | '' = '') {
     this.flushNow();

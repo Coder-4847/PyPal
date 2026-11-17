@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "noEmit": true,
     "isolatedModules": true,
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "tests", "vite.config.ts", "e2e", "playwright.config.ts"]
+  "include": ["src", "tests", "vite.config.ts", "e2e", "playwright.config.ts", "scripts/vite-plugin-pypal.ts"]
 }

@@ -15,7 +15,7 @@
   try { tried = sessionStorage.getItem('pypal:coi') === '1'; } catch (e) {}
   if (tried) return; // never loop: Run still works, Stop falls back to restarting
   var url = new URL('sw.js', document.currentScript ? document.currentScript.src : location.href);
-  navigator.serviceWorker.register(url.href).then(function (reg) {
+  navigator.serviceWorker.register(url.href, { updateViaCache: 'none' }).then(function (reg) {
     var go = function () {
       try { sessionStorage.setItem('pypal:coi', '1'); } catch (e) {}
       location.reload();

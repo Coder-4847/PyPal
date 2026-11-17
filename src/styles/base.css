@@ -66,6 +66,10 @@ button { font: inherit; color: inherit; }
   border-bottom: 1px solid var(--border);
 }
 .brand { display: inline-flex; align-items: center; gap: var(--space-2); text-decoration: none; color: var(--text); justify-self: start; border-radius: var(--radius-sm); }
+.brand { transition: opacity var(--dur-1) var(--ease-standard), transform var(--dur-1) var(--ease-standard); }
+.brand:hover { opacity: 0.8; }
+.brand:active { transform: scale(0.97); }
+.brand:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
 .brand-name { font-weight: 650; font-size: var(--text-lg); letter-spacing: -0.01em; }
 .brand-stroke { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
 .brand-dot { fill: var(--accent); }
@@ -165,7 +169,8 @@ button { font: inherit; color: inherit; }
 .divider { position: relative; cursor: col-resize; touch-action: none; background: var(--surface-2); display: flex; justify-content: center; --ctl-radius: var(--radius-sm); }
 .divider-line { width: 2px; height: 100%; background: var(--border); transform: scaleX(1); transition: background-color var(--dur-2) var(--ease-standard), transform var(--dur-2) var(--ease-standard); }
 .divider:hover .divider-line, .divider.dragging .divider-line { background: var(--accent); transform: scaleX(1.5); }
-.divider:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.divider { box-shadow: inset 0 0 0 2px transparent; transition: box-shadow var(--dur-2) var(--ease-standard); }
+.divider:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--focus-ring); }
 .divider.dragging { transition: none; }
 body.resizing { cursor: col-resize; user-select: none; }
 body.resizing .editor-host, body.resizing .term { pointer-events: none; }
@@ -220,6 +225,7 @@ body.resizing .editor-host, body.resizing .term { pointer-events: none; }
   overscroll-behavior: contain;
   outline: none;
 }
+.term { box-shadow: inset 0 0 0 2px transparent; transition: box-shadow var(--dur-2) var(--ease-standard); }
 .term:focus-visible { box-shadow: inset 0 0 0 2px var(--focus-ring); }
 .term-line { min-height: 1.65em; white-space: pre-wrap; overflow-wrap: anywhere; }
 .term-line.enter { animation: line-in var(--dur-2) var(--ease-standard) backwards; animation-delay: calc(var(--i, 0) * var(--stagger)); }
