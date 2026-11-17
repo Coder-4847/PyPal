@@ -29,7 +29,10 @@ export function keyParts(keys: string): string[] {
 export function renderKeys(keys: string): HTMLElement {
   const wrap = document.createElement('span');
   wrap.className = 'keys';
-  wrap.setAttribute('aria-label', keyParts(keys).join(' plus '));
+  const spoken = document.createElement('span');
+  spoken.className = 'sr-only';
+  spoken.textContent = keyParts(keys).join(' plus ');
+  wrap.append(spoken);
   for (const p of keyParts(keys)) {
     const k = document.createElement('kbd');
     k.className = 'kbd';

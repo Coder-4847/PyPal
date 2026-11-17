@@ -18,6 +18,12 @@ const snapshotAnimations = (page: Page) =>
     }),
   );
 
+/** Custom properties hold unresolved calc(); read them the way the browser uses them. */
+const resolveTokens = (page: Page, names: string[]) =>
+  page.evaluate((ns) => ns.map((n) => { const el = document.createElement('i'); el.style.transitionDuration = `var(${n})`; document.body.append(el); const v = getComputedStyle(el).transitionDuration; el.remove(); return v; }), names);
+const resolveEasing = (page: Page, names: string[]) =>
+  page.evaluate((ns) => ns.map((n) => { const el = document.createElement('i'); el.style.transitionTimingFunction = `var(${n})`; document.body.append(el); const v = getComputedStyle(el).transitionTimingFunction; el.remove(); return v; }), names);
+
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
 
@@ -65,11 +71,8 @@ test.describe('reduced motion', () => {
 test.describe('motion=slow', () => {
   test('every duration token and JS animation runs 5x slower', async ({ page }) => {
     await open(page, './?motion=slow');
-    const tokens = await page.evaluate(() => {
-      const cs = getComputedStyle(document.documentElement);
-      return ['--dur-1', '--dur-2', '--dur-3', '--dur-4'].map((n) => cs.getPropertyValue(n).trim());
-    });
-    expect(tokens).toEqual(['600ms', '1000ms', '1600ms', '2400ms']);
+    const tokens = await resolveTokens(page, ['--dur-1', '--dur-2', '--dur-3', '--dur-4']);
+    expect(tokens).toEqual(['0.6s', '1s', '1.6s', '2.4s']);
     await page.locator('#menu-examples').click();
     const anims = await snapshotAnimations(page);
     expect(anims.some((a) => a.duration === 1600)).toBe(true); // the menu's 320 ms entrance, slowed
@@ -77,11 +80,8 @@ test.describe('motion=slow', () => {
 
   test('normal speed uses the documented tokens', async ({ page }) => {
     await open(page);
-    const tokens = await page.evaluate(() => {
-      const cs = getComputedStyle(document.documentElement);
-      return ['--dur-1', '--dur-2', '--dur-3', '--dur-4', '--ease-standard', '--ease-emphasized'].map((n) => cs.getPropertyValue(n).trim());
-    });
-    expect(tokens).toEqual(['120ms', '200ms', '320ms', '480ms', 'cubic-bezier(0.2, 0, 0, 1)', 'cubic-bezier(0.3, 0, 0, 1)']);
+    expect(await resolveTokens(page, ['--dur-1', '--dur-2', '--dur-3', '--dur-4'])).toEqual(['0.12s', '0.2s', '0.32s', '0.48s']);
+    expect(await resolveEasing(page, ['--ease-standard', '--ease-emphasized'])).toEqual(['cubic-bezier(0.2, 0, 0, 1)', 'cubic-bezier(0.3, 0, 0, 1)']);
   });
 });
 
@@ -94,7 +94,8 @@ test('typing and clicking are never blocked by an animation in progress', async 
   await page.locator('.cm-content').click();
   await page.keyboard.press('Control+End');
   await page.keyboard.type('# typed during animation');
-  expect(await page.evaluate(() => (window as any).__pypal.editor.getCode())).toContain('# typed during animation');
+  // the 5x-slow sheet animation is still running, yet every key lands promptly
+  await expect.poll(() => page.evaluate(() => (window as any).__pypal.editor.getCode()), { timeout: 3000 }).toContain('# typed during animation');
   await page.locator('#theme').click();
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.theme)).toMatch(/light|dark/);
 });

@@ -127,11 +127,11 @@ test('screen readers hear errors, fixes and results through a polite live region
   await page.locator('#run').click();
   await expect(live).toContainText('Program finished');
   await expect(live).toContainText('2 lines of output');
-  await setCode(page, 'print(nope)\n');
+  await setCode(page, 'print(zzqq)\n');
   await page.locator('#run').click();
   await expect(live).toContainText('line 1');
   await page.locator('#fix-all').click();
-  await expect(page.locator('#fix-sheet .hunk')).toHaveCount(0); // `nope` has no safe fix
+  await expect(page.locator('#fix-sheet .hunk')).toHaveCount(0); // `zzqq` has no safe fix
   await expect(live).toContainText('could not fix');
 });
 
