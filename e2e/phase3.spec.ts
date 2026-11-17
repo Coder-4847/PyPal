@@ -232,12 +232,17 @@ test.describe('offline and install', () => {
     await expect(page.locator('#net-chip')).toBeHidden();
   });
 
-  test('manifest, icons, social image and the 404 page are served', async ({ page, request }) => {
+  test('manifest, icons, social image and the 404 page are served', async ({ page }) => {
     await open(page);
-    const m = await (await request.get('manifest.webmanifest')).json();
-    expect(m.display).toBe('standalone');
-    for (const icon of m.icons) expect((await request.get(icon.src)).status()).toBe(200);
-    expect((await request.get('og.png')).status()).toBe(200);
+    // fetch from inside the page, like a browser would (works through any proxy the browser uses)
+    const get = (path: string) => page.evaluate(async (p) => { const r = await fetch(p); return { status: r.status, type: r.headers.get('content-type') ?? '', body: p.endsWith('.webmanifest') ? await r.json() : null }; }, path);
+    const m = await get('manifest.webmanifest');
+    expect(m.status).toBe(200);
+    expect(m.body.display).toBe('standalone');
+    for (const icon of m.body.icons) expect((await get(icon.src)).status).toBe(200);
+    const og = await get('og.png');
+    expect(og.status).toBe(200);
+    expect(og.type).toContain('image/png');
     const html = await page.content();
     expect(html).toContain('property="og:title"');
     expect(html).toContain('rel="manifest"');

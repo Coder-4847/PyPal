@@ -1,5 +1,29 @@
 # Progress
 
+## Phase 3: Polish, examples and offline (complete)
+
+Live: https://coder-4847.github.io/PyPal/ (deploy run 5 green: https://github.com/Coder-4847/PyPal/actions/runs/44013045225). Verified on the live URL in Chromium: all 55 Playwright tests pass (features, offline, install assets, share links, axe audits in both themes, reduced motion, slow flag); Lighthouse desktop (two runs): performance 99, accessibility 100, best practices 100, SEO 100 (LCP 0.4-0.5 s, TBT 0 ms, CLS 0.001).
+
+Done
+- **Motion pass** (moments 7 and 8): menus, dialogs, toasts, the palette, panel resize (keyboard steps glide) and animated focus rings all use the shared tokens; every control has hover and press states. Reviewed frame by frame at `?motion=slow`; two things fixed: the squiggle draw-in used to clip the code text (the underline is now its own layer), and the Run button's label colour changed before its background (now transitions together). Reduced motion: nothing slides, scales or loops (asserted by an e2e test); `?motion=slow` scales tokens and script animations 5x (asserted).
+- **Content and sharing:** six starter examples (the sixth is broken and Fix all repairs it in three verified changes), share link in the URL hash (compressed, size-capped, UTF-8 and NUL checked, previous code restorable, `hashchange` handled), download `main.py` (Ctrl/Cmd+S), open `.py` (button or drag and drop, 1 MB cap, binary refused), shortcut sheet on `?`, command palette on Ctrl/Cmd+K, Examples and File menus.
+- **Offline and install:** generated service worker caches the app shell, the pinned Pyodide core and any package wheel once used; works with the network cut (e2e cuts it for the page and the worker). Web app manifest, PNG icons (incl. maskable), install entry when the browser offers it, Offline chip.
+- **Accessibility:** one `h1`, landmarks, labelled regions, correct ARIA on menus, dialogs, palette (combobox/listbox) and separator; Escape then Tab leaves the editor; focus order tested; results, errors, fixes and input prompts announced through one polite live region (terminal log itself is `aria-live="off"` so a print flood cannot flood a screen reader); axe-core finds no violations on the main screen, error card, fix preview, failure sheet, menus, settings, palette, shortcut sheet and phone layout, in light and dark.
+- **Mobile and speed:** phone layout reviewed (icon-only menus, preview sheet fixed to the bottom of the screen, touch hint without Ctrl). Code splitting: entry 18 kB gzip; editor, fix engine, AI client, settings, palette and shortcuts are lazy chunks preloaded when idle. `npm run build` enforces a bundle budget (`scripts/check-budget.mjs`).
+- **Finishing touches:** empty states (terminal, editor placeholder, palette), 404 page with the correct base path, favicon set, social preview image and meta tags (absolute URLs derived from the repository name in CI).
+- Bugs found by the new tests and fixed: Run clicked while the spinner lingered did nothing; Escape did not close a menu opened with the mouse; the fix sheet moved focus after a 60 ms delay (could swallow keystrokes of someone already typing); error card's accessible name did not contain its visible text; menus were outside any landmark; keyboard hints were mislabelled for screen readers; the service worker missed cached files because of a `Vary: Origin` header; `vite preview` sent isolation headers and hid the service-worker path from local tests.
+- Tests: 150 Vitest tests; 55 Playwright tests (phase 1, 2, 3, accessibility, motion).
+
+Next
+- Phase 4 (final review on Opus): test everything in Chromium, Firefox, WebKit and a phone viewport; grow the fixture corpus to 150+ (multiple errors in one file, tabs, unicode, long files, code to refuse); edge cases (huge output, recursion, memory, rapid Run/Stop, worker crash, first visit offline, corrupted localStorage, bad share data); security (escaping, key handling, CSP, dependency audit); motion audit with frame times; cleanup and README screenshots.
+
+Known issues and limits
+- Only Chromium has been run so far. Firefox and WebKit are untested (View Transitions for the theme switch fall back to an instant switch; `CompressionStream` is required for compressed share links, older browsers use plain links).
+- A first visit while offline cannot work (nothing is cached yet); the page says so.
+- Packages that were never loaded online cannot be loaded offline.
+- The AI tier is only tested with a mocked provider (no real key was used).
+- No Content-Security-Policy yet (Phase 4).
+
 ## Phase 2: Friendly errors and the fix engine (complete)
 
 Live: https://coder-4847.github.io/PyPal/ (deploy green: https://github.com/Coder-4847/PyPal/actions/runs/43929071589). Verified on the live URL in Chromium: all 24 Playwright tests pass (Phase 1 and Phase 2, including Fix all, Fix selection, undo, honest failure, settings and the verified AI tier with a mocked provider); Lighthouse desktop 100 / 100 / 100 (performance, accessibility, best practices).
