@@ -24,7 +24,7 @@ test.describe('reduced motion', () => {
   test('movement is swapped for fades: nothing slides, scales or loops', async ({ page }) => {
     await open(page);
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--move').trim())).toBe('0');
-    const seen: { name: string; duration: number; iterations: number; props: string[] }[] = [];
+    const seen: { name: string; duration: number; iterations?: number; props: string[] }[] = [];
     const sample = async () => seen.push(...(await snapshotAnimations(page)));
 
     await setCode(page, 'print("hi")\nprint(nope)\n');

@@ -30,7 +30,7 @@ export class Menu {
     this.panel.id = id;
     this.panel.setAttribute('role', 'menu');
     this.panel.hidden = true;
-    document.body.append(this.panel);
+    (document.querySelector('main') ?? document.body).append(this.panel);
     button.setAttribute('aria-haspopup', 'menu');
     button.setAttribute('aria-expanded', 'false');
     button.setAttribute('aria-controls', id);

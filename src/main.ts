@@ -108,7 +108,7 @@ const py = new PyClient(
   },
   BASE,
 );
-const runBtn = new RunButton($('run') as HTMLButtonElement, { run: () => runCode(), stop: () => stopCode() });
+const runBtn = new RunButton($('run') as HTMLButtonElement, { run: () => runCode(), stop: () => stopCode(), isRunning: () => py.isRunning });
 
 /** Warm the lazy chunks once the page is idle, so Fix, the palette and dialogs open instantly. */
 function preloadWhenIdle() {
@@ -119,7 +119,7 @@ function preloadWhenIdle() {
     void import('./ui/settings');
   };
   if ('requestIdleCallback' in window) window.requestIdleCallback(run, { timeout: 5000 });
-  else window.setTimeout(run, 2000);
+  else setTimeout(run, 2000);
 }
 
 /* ============================ the editor (loads in parallel) ============================ */

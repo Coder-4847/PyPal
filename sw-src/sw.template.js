@@ -57,8 +57,12 @@ function isolate(res) {
 
 const cacheable = (res) => res && res.ok && res.status === 200 && (res.type === 'basic' || res.type === 'cors');
 
+// Files are keyed by URL alone: a Vary header (some servers send Vary: Origin) must not cause a miss
+// just because a script load and a fetch() differ in their request headers.
+const MATCH = { ignoreVary: true };
+
 async function cacheFirst(req, cacheName, lookupAll) {
-  const hit = lookupAll ? await caches.match(req) : await (await caches.open(cacheName)).match(req);
+  const hit = lookupAll ? await caches.match(req, MATCH) : await (await caches.open(cacheName)).match(req, MATCH);
   if (hit) return hit;
   const res = await fetch(req);
   if (cacheable(res)) (await caches.open(cacheName)).put(req, res.clone());
@@ -75,7 +79,7 @@ async function networkFirst(req, cacheName, fallbackKey) {
     if (cacheable(res)) cache.put(fallbackKey ?? req, res.clone());
     return res;
   } catch (err) {
-    const hit = (await cache.match(fallbackKey ?? req, { ignoreSearch: true })) ?? (await caches.match(fallbackKey ?? req, { ignoreSearch: true }));
+    const hit = (await cache.match(fallbackKey ?? req, { ignoreSearch: true, ...MATCH })) ?? (await caches.match(fallbackKey ?? req, { ignoreSearch: true, ...MATCH }));
     if (hit) return hit;
     // A slow (not failed) network and nothing cached: wait for the real answer.
     return fetch(req).catch(() => { throw err; });

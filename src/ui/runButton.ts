@@ -10,11 +10,12 @@ export class RunButton {
 
   constructor(
     readonly el: HTMLButtonElement,
-    private handlers: { run(): void; stop(): void },
+    private handlers: { run(): void; stop(): void; isRunning(): boolean },
   ) {
     el.addEventListener('click', () => {
-      if (this.state === 'running') this.handlers.stop();
-      else if (this.state === 'idle' || this.state === 'success' || this.state === 'error') this.handlers.run();
+      // the spinner can linger briefly after a program ends: only a real run means "Stop"
+      if (this.state === 'running' && this.handlers.isRunning()) this.handlers.stop();
+      else if (this.state === 'running' || this.state === 'idle' || this.state === 'success' || this.state === 'error') this.handlers.run();
     });
     this.apply('loading');
   }

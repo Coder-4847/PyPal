@@ -21,8 +21,7 @@ export function createErrorCard(o: CardOptions): HTMLElement {
   const main = document.createElement('button');
   main.type = 'button';
   main.className = 'err-main';
-  if (f.line) main.setAttribute('aria-label', `${f.title}. Go to line ${f.line}`);
-  else main.disabled = true;
+  if (!f.line) main.disabled = true;
 
   const head = document.createElement('span');
   head.className = 'err-head';
@@ -49,6 +48,12 @@ export function createErrorCard(o: CardOptions): HTMLElement {
   hintLabel.textContent = 'Hint ';
   hint.append(hintLabel, document.createTextNode(f.hint));
   main.append(head, title, what, hint);
+  if (f.line) {
+    const go = document.createElement('span');
+    go.className = 'sr-only';
+    go.textContent = ` Activate to go to line ${f.line}.`;
+    main.append(go);
+  }
   if (f.line) main.addEventListener('click', () => o.onJump(f.line!));
 
   const actions = document.createElement('div');

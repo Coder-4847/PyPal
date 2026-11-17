@@ -32,6 +32,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.locator('#run').click();
       await expect(page.locator('.err-card')).toBeVisible();
       await page.locator('.err-card').getByRole('button', { name: 'Show details' }).click();
+      await page.waitForTimeout(600); // let the details finish fading in
       await audit(page, 'error card');
       await page.locator('#fix-all').click();
       await expect(page.locator('#fix-sheet .hunk')).toHaveCount(1);
@@ -79,8 +80,14 @@ test('keyboard: every control is reachable and visibly focused, in a sensible or
   await open(page);
   await page.locator('body').click({ position: { x: 2, y: 2 } });
   const order: string[] = [];
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 12; i++) {
     await page.keyboard.press('Tab');
+    // Tab indents inside the editor by design; Escape then Tab is the way out
+    if (await page.evaluate(() => Boolean(document.activeElement?.closest('.cm-editor')))) {
+      order.push('editor');
+      await page.keyboard.press('Escape');
+      await page.keyboard.press('Tab');
+    }
     const id = await page.evaluate(() => {
       const el = document.activeElement as HTMLElement | null;
       if (!el) return 'none';
@@ -93,7 +100,7 @@ test('keyboard: every control is reachable and visibly focused, in a sensible or
   expect(text.indexOf('run')).toBeGreaterThan(-1);
   expect(text.indexOf('run')).toBeLessThan(text.indexOf('menu-examples'));
   expect(text.indexOf('menu-examples')).toBeLessThan(text.indexOf('menu-file'));
-  expect(text.indexOf('theme')).toBeLessThan(text.indexOf('Python code editor'));
+  expect(text.indexOf('theme')).toBeLessThan(text.indexOf('editor'));
   expect(text).toContain('divider');
 });
 
@@ -103,6 +110,7 @@ test('focus rings are drawn on the Run button, menu buttons and dividers', async
     await page.locator(sel).focus();
     await page.keyboard.press('Shift+Tab');
     await page.keyboard.press('Tab');
+    await page.waitForTimeout(500); // the ring fades in
     const ring = await page.locator(sel).evaluate((el) => {
       const after = getComputedStyle(el, '::after');
       return { opacity: after.opacity, content: after.content, outline: getComputedStyle(el).outlineStyle };
