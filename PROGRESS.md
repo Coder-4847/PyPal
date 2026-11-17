@@ -1,5 +1,38 @@
 # Progress
 
+## Phase 4: Final review (complete)
+
+Live: https://coder-4847.github.io/PyPal/
+
+### What was tested
+- **Every spec feature in four browsers on the live site:** Chromium, Firefox, WebKit and a phone viewport (Pixel 7), 71 Playwright tests each (284 in total): running code, input(), Stop, packages, errors and cards, live check, Fix all / Fix selection / preview / undo, AI tier (mocked), examples, share links, files, menus, palette, shortcuts, offline after first visit, install assets, accessibility (axe in both themes), reduced motion, `?motion=slow`, edge cases and security. Final result: all 284 pass (Firefox re-run in a clean profile: 71/71).
+- **Fix engine:** 170 fixture cases (multiple errors per file, tabs and odd indentation, unicode and emoji, files of 300-1,000 lines, 27 cases it must refuse to touch), plus invariant tests (working code is never changed; offered fixes keep every comment, remove at most two words per change and always compile) and 120 random edits of working programs. 371 Vitest tests, all passing.
+- **Edge cases:** huge output (capped with a notice, page stays responsive), runaway recursion, memory-hungry code, input() in a loop, Stop during input(), rapid Run/Stop clicking, Python crashing, the worker dying silently, Python failing to download, corrupted and blocked localStorage, damaged and hostile share links, no cross-origin isolation at all.
+- **Security:** CSP in force with zero violations across a full session (run, input, CDN package, fix, palette, settings, theme); program output and error text never become HTML; the AI key only ever goes to the provider; `npm audit`: 0 vulnerabilities.
+- **Motion:** frame times recorded for every animated moment (intro, Run morph, menu, palette, error card, fix preview, accept wipe, theme reveal, typing): no frame over 50 ms; typing is never blocked by an animation.
+- **Lighthouse (desktop, live):** performance 94-100, accessibility 100, best practices 100, SEO 100 across runs.
+
+### Bugs found and fixed
+- The Python worker created a SharedArrayBuffer at load, so without cross-origin isolation Python never started (Run must work without isolation; now it does, with Stop restarting Python).
+- The generated `sw.js` was invalid once the CSP was added (quoting); a build-output test now parses it.
+- After Stop restarted Python, the button said "Run" while Python was still starting, and a click did nothing.
+- A worker that died silently left the next run hanging forever; runs are now acknowledged and a silent worker is replaced.
+- A Python fatal error left a broken Python behind; it is now replaced automatically with a clear message.
+- Engine: an indented function body swallowed the call below it; Python's columns (code points) were treated as UTF-16 offsets, misplacing fixes and squiggles after emoji; a missing `}` was placed at the first line that merely moved the error; a typo in a variable's definition caused every correct use to be "fixed" to match it; `else` indented like the body, empty blocks at end of file and one-line headers were not handled.
+- Firefox: the Run button's accessible name did not contain its visible text.
+- Phones: the Offline chip was hidden; the splitter ignored Left/Right arrows.
+- Diff cards with several changes were squeezed and their Accept/Skip buttons clipped.
+- Ctrl+K followed quickly by Escape still opened the palette.
+- During the intro the page had no `main` landmark and the fading text measured as low contrast (made Lighthouse accessibility flip between 92 and 100).
+- OverflowError had no plain-English explanation.
+
+### Known limits
+- A first visit while offline cannot work (nothing is cached yet); packages never used online cannot load offline.
+- input() needs cross-origin isolation; without it (very rare: the service worker is blocked) PyPal explains this instead.
+- The AI tier is tested with a mocked provider; no real key was used.
+- Ambiguous indentation is resolved by heuristics (documented in DECISIONS.md); the diff preview always lets the student decide.
+- Logic bugs (code that runs without raising) are out of scope for the fixer by design.
+
 ## Phase 3: Polish, examples and offline (complete)
 
 Live: https://coder-4847.github.io/PyPal/ (deploy run 5 green: https://github.com/Coder-4847/PyPal/actions/runs/44013045225). Verified on the live URL in Chromium: all 55 Playwright tests pass (features, offline, install assets, share links, axe audits in both themes, reduced motion, slow flag); Lighthouse desktop (two runs): performance 99, accessibility 100, best practices 100, SEO 100 (LCP 0.4-0.5 s, TBT 0 ms, CLS 0.001).

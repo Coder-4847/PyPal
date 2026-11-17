@@ -35,8 +35,10 @@ for i in range(1, 4):
 const PREVIOUS_KEY = 'pypal:previous';
 const BASE = import.meta.env.BASE_URL;
 
-const app = $('app');
-app.inert = true; // nothing underneath the intro can take focus
+// Nothing underneath the intro can take focus. The controls are made inert rather than the whole
+// app, so the page's landmarks (header, main) exist from the very first paint.
+const underIntro = () => Array.from(document.querySelectorAll<HTMLElement>('.topbar > *, .workspace > *'));
+underIntro().forEach((el) => (el.inert = true));
 const splash = new Splash();
 const term = new Terminal($('term'));
 const saveState = $('save-state');
@@ -79,7 +81,7 @@ const py = new PyClient(
         if (!booted) {
           booted = true;
           void splash.dismiss().then(() => {
-            app.inert = false;
+            underIntro().forEach((el) => (el.inert = false));
             editor.focus();
             preloadWhenIdle();
           });

@@ -299,6 +299,8 @@ body.resizing .editor-host, body.resizing .term { pointer-events: none; }
 .splash-label .mono { min-width: 4ch; color: var(--text-faint); }
 .splash-error { text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--space-3); max-width: 32ch; color: var(--text-muted); font-size: var(--text-sm); }
 .splash.leaving { pointer-events: none; opacity: 0; transition: opacity var(--dur-3) var(--ease-standard); }
+/* the words go at once (never shown half-faded, unreadable); the logo and background fade */
+.splash.leaving .splash-label { visibility: hidden; }
 .splash.leaving .splash-logo { transform: scale(calc(1 - var(--move) * 0.12)); transition: transform var(--dur-3) var(--ease-emphasized); }
 .splash.gone { display: none; }
 

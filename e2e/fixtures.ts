@@ -5,13 +5,14 @@ import { join } from 'node:path';
 
 /**
  * In the cloud sandbox, HTTPS goes through a proxy whose CA Firefox does not know. When
- * PW_FIREFOX_PROFILE points at an NSS profile that trusts it, Firefox tests run in a fresh copy of
+ * PW_FIREFOX_PROFILE points at an NSS profile that trusts it (a profile holding only that
+ * certificate database, never one that has visited the site), Firefox tests run in a fresh copy of
  * that profile (a persistent context), with the same options a normal context would get.
  * Everywhere else this is the stock Playwright `context`.
  */
 export const test = base.extend({
   context: async (
-    { browserName, playwright, viewport, colorScheme, reducedMotion, baseURL, permissions, acceptDownloads, locale, hasTouch, isMobile, userAgent, deviceScaleFactor, context },
+    { browserName, playwright, viewport, colorScheme, reducedMotion, baseURL, permissions, acceptDownloads, locale, hasTouch, isMobile, userAgent, deviceScaleFactor, serviceWorkers, bypassCSP, context },
     use,
   ) => {
     const profile = process.env.PW_FIREFOX_PROFILE;
@@ -22,7 +23,7 @@ export const test = base.extend({
     const dir = mkdtempSync(join(tmpdir(), 'pypal-ff-'));
     cpSync(profile, dir, { recursive: true });
     const ctx = await playwright.firefox.launchPersistentContext(dir, {
-      viewport, colorScheme, reducedMotion, baseURL, permissions, acceptDownloads, locale, hasTouch, isMobile, userAgent, deviceScaleFactor,
+      viewport, colorScheme, reducedMotion, baseURL, permissions, acceptDownloads, locale, hasTouch, isMobile, userAgent, deviceScaleFactor, serviceWorkers, bypassCSP,
     });
     await use(ctx);
     await ctx.close();
