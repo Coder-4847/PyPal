@@ -34,6 +34,7 @@ export type ToWorker = InitMessage | RunMessage | AnalyzeMessage | ScopeMessage;
 export type FromWorker =
   | { type: 'progress'; value: number; label: string }
   | { type: 'ready'; version: string }
+  | { type: 'started'; id: number }
   | { type: 'boot-error'; message: string }
   | { type: 'out'; stream: 'out' | 'err'; text: string; dropped?: boolean }
   | { type: 'input-request'; prompt: string }

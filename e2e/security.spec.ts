@@ -8,6 +8,7 @@ async function open(page: Page) {
 const setCode = (page: Page, code: string) => page.evaluate((c) => (window as any).__pypal.editor.setCode(c), code);
 
 test('the Content-Security-Policy is in force and nothing PyPal does violates it', async ({ page }) => {
+  test.setTimeout(240_000); // the first numpy download can be slow
   const violations: string[] = [];
   page.on('console', (m) => {
     if (/content security policy|Content-Security-Policy|CSP/i.test(m.text())) violations.push(m.text());

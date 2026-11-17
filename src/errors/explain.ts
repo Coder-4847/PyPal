@@ -263,6 +263,13 @@ export function explain(e: ErrorInfo): Friendly {
         hint: 'Look for a function that keeps calling itself, a loop that keeps growing a list, or a very large number. Then press Run again.',
         line,
       };
+    case 'OverflowError':
+      return {
+        title: 'That number is too big',
+        what: 'A number got too large for Python to use here, for example a list with more items than the computer can hold.',
+        hint: 'Use a smaller number, or check the calculation that produced it.',
+        line,
+      };
     case 'EOFError':
       return { title: 'input() had nothing to read', what: 'The program asked for input but none was given.', hint: 'Type an answer in the terminal and press Enter.', line };
     case 'MemoryError':

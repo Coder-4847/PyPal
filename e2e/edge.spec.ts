@@ -33,23 +33,35 @@ test('a runaway recursion becomes a friendly RecursionError card', async ({ page
   await expect(term(page)).toContainText('still fine');
 });
 
-test('a crash deep inside Python restarts it, and the next run works', async ({ page }) => {
+test('if Python itself crashes, it is restarted and the next run works', async ({ page }) => {
   await open(page);
-  // raising the recursion limit lets Python overflow the real (WebAssembly) stack
-  await setCode(page, 'import sys\nsys.setrecursionlimit(10**6)\ndef f(n):\n    return f(n + 1)\nf(0)\n');
+  await setCode(page, 'import pyodide_js\npyodide_js._api.fatal_error(Exception("boom"))\n');
   await run(page);
-  await expect(page.locator('.err-card, .term-line.status')).not.toHaveCount(0, { timeout: 60_000 });
+  await expect(page.locator('.err-card')).toContainText('Python itself crashed');
   await expect(page.locator('#run')).toHaveAttribute('data-state', 'idle', { timeout: 60_000 });
   await setCode(page, 'print(6 * 7)\n');
   await run(page);
   await expect(term(page)).toContainText('42', { timeout: 60_000 });
 });
 
+test('a worker that dies silently is noticed and replaced', async ({ page }) => {
+  await open(page);
+  await setCode(page, 'import js\njs.close()\n'); // the worker closes itself after this run
+  await run(page);
+  await expect(term(page)).toContainText('Finished');
+  await setCode(page, 'print("after")\n');
+  await run(page); // sent to a dead worker: PyPal must notice instead of hanging
+  await expect(page.locator('.err-card')).toContainText('Python itself crashed', { timeout: 20_000 });
+  await expect(page.locator('#run')).toHaveAttribute('data-state', 'idle', { timeout: 60_000 });
+  await run(page);
+  await expect(term(page)).toContainText('after', { timeout: 60_000 });
+});
+
 test('memory-hungry code fails politely', async ({ page }) => {
   await open(page);
-  await setCode(page, 'x = [0] * (10 ** 12)\n');
+  await setCode(page, 'x = [0] * (10 ** 9)\n');
   await run(page);
-  await expect(page.locator('.err-card')).toContainText(/memory|MemoryError/i);
+  await expect(page.locator('.err-card')).toContainText(/memory|too big/i);
   await setCode(page, 'print("ok after memory")\n');
   await run(page);
   await expect(term(page)).toContainText('ok after memory', { timeout: 60_000 });

@@ -27,6 +27,8 @@ export interface PyEvents {
 
 /** How long Stop waits for Python to notice an interrupt before restarting the worker. */
 const STOP_GRACE_MS = 1500;
+/** A live worker acknowledges a run at once; silence this long means it has died. */
+const ACK_TIMEOUT_MS = 4000;
 
 /**
  * Owns the Python worker. Run streams output through the callbacks; Stop sends
@@ -47,6 +49,7 @@ export class PyClient {
   private current: { id: number; resolve: (r: RunResult) => void } | null = null;
   private nextId = 1;
   private stopTimer: number | undefined;
+  private ackTimer: number | undefined;
   private analyzeWaiters = new Map<number, (d: Diag | null) => void>();
   private analyzeId = 0;
 
@@ -120,6 +123,9 @@ export class PyClient {
         this.analyzeWaiters.get(msg.id)?.(msg.diag);
         this.analyzeWaiters.delete(msg.id);
         break;
+      case 'started':
+        window.clearTimeout(this.ackTimer);
+        break;
       case 'done':
         if (this.current && this.current.id === msg.id) {
           this.finish({ ok: msg.ok, stopped: msg.stopped, error: msg.error });
@@ -136,6 +142,7 @@ export class PyClient {
 
   private finish(result: RunResult) {
     window.clearTimeout(this.stopTimer);
+    window.clearTimeout(this.ackTimer);
     const cur = this.current;
     this.current = null;
     cur?.resolve(result);
@@ -168,6 +175,15 @@ export class PyClient {
     const cur = this.current as { id: number } | null; // may have been cleared while we waited
     if (!cur || cur.id !== id) return done; // stopped while loading
     this.post({ type: 'run', id, code });
+    // If the worker died quietly (closed itself, or the browser reclaimed it), say so and start a new one.
+    window.clearTimeout(this.ackTimer);
+    this.ackTimer = window.setTimeout(() => {
+      if (this.current?.id !== id) return;
+      this.worker.terminate();
+      this.events.progress(0, 'Restarting Python');
+      this.spawn();
+      this.finish({ ok: false, stopped: false, error: crashError('Python stopped responding, so PyPal started a fresh one.') });
+    }, ACK_TIMEOUT_MS);
     return done;
   }
 

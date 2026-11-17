@@ -52,6 +52,9 @@ describe('explain', () => {
     expect(e('AttributeError', "'str' object has no attribute 'uper'", 1, 'upper').hint).toContain('upper');
     expect(e('ModuleNotFoundError', "No module named 'requests'").title).toContain('requests');
   });
+  it('a number that is too big is explained', () => {
+    expect(e('OverflowError', "cannot fit 'int' into an index-sized integer").title).toMatch(/too big/);
+  });
   it('a crash of Python itself is explained, with the restart mentioned', () => {
     const f = e('PythonCrash', 'RangeError: Maximum call stack size exceeded', null);
     expect(f.title).toMatch(/crashed/);

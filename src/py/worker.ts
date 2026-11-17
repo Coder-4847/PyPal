@@ -152,6 +152,7 @@ function sleep(seconds: number): boolean {
 
 /* ---------- running code ---------- */
 async function run(id: number, code: string) {
+  post({ type: 'started', id }); // tells the page this worker is alive
   try {
     if (interrupt) interrupt[0] = 0;
     pending.out = pending.err = '';
