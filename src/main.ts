@@ -114,7 +114,7 @@ const py = new PyClient(
   },
   BASE,
 );
-const runBtn = new RunButton($('run') as HTMLButtonElement, { run: () => runCode(), stop: () => stopCode(), isRunning: () => py.isRunning });
+const runBtn = new RunButton($('run') as HTMLButtonElement, { run: () => runCode(), stop: () => stopCode(), isRunning: () => py.isRunning, isReady: () => py.isReady });
 
 /** Warm the lazy chunks once the page is idle, so Fix, the palette and dialogs open instantly. */
 function preloadWhenIdle() {

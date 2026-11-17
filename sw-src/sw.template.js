@@ -10,7 +10,7 @@ const VERSION = '__VERSION__';
 const PYODIDE_VERSION = '__PYODIDE_VERSION__';
 const PRECACHE = __PRECACHE__;
 // The page and the Python workers get a real CSP header (a <meta> tag cannot cover workers or framing).
-const CSP = '__CSP__';
+const CSP = __CSP__;
 
 const ROOT = new URL('./', self.location.href).href;
 const SHELL = `pypal-shell-${VERSION}`;

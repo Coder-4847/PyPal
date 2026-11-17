@@ -132,7 +132,8 @@ function readInput(prompt: string): string | null {
   return new TextDecoder().decode(inputBytes.slice(0, len));
 }
 
-const napBuf = new Int32Array(new SharedArrayBuffer(4));
+// Without cross-origin isolation there is no SharedArrayBuffer: never touch it at load time.
+const napBuf = typeof SharedArrayBuffer === 'function' ? new Int32Array(new SharedArrayBuffer(4)) : null;
 /** Sleeps in short slices so Stop stays responsive. Returns true if interrupted. */
 function sleep(seconds: number): boolean {
   flush();
@@ -144,7 +145,8 @@ function sleep(seconds: number): boolean {
     }
     const left = end - performance.now();
     if (left <= 0) return false;
-    Atomics.wait(napBuf, 0, 0, Math.min(left, 40));
+    if (napBuf) Atomics.wait(napBuf, 0, 0, Math.min(left, 40));
+    else while (performance.now() < Math.min(end, performance.now() + 40)) { /* no isolation: plain wait */ }
   }
 }
 

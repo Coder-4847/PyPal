@@ -10,7 +10,7 @@ export class RunButton {
 
   constructor(
     readonly el: HTMLButtonElement,
-    private handlers: { run(): void; stop(): void; isRunning(): boolean },
+    private handlers: { run(): void; stop(): void; isRunning(): boolean; isReady(): boolean },
   ) {
     el.addEventListener('click', () => {
       // the spinner can linger briefly after a program ends: only a real run means "Stop"
@@ -25,6 +25,8 @@ export class RunButton {
   }
 
   private apply(state: RunState) {
+    // never show "Run" while Python is (re)starting: a click would do nothing
+    if (state === 'idle' && !this.handlers.isReady()) state = 'loading';
     this.state = state;
     this.el.dataset.state = state;
     // each name starts with the word on screen (the accessible name must contain the visible text)
@@ -49,6 +51,7 @@ export class RunButton {
     window.clearTimeout(this.timer);
     this.apply('loading');
   }
+
 
   start() {
     window.clearTimeout(this.timer);

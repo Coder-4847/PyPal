@@ -133,3 +133,27 @@ test('with storage blocked, PyPal still runs and says it cannot save', async ({ 
   await run(page);
   await expect(term(page)).toContainText('no storage');
 });
+
+test.describe('without cross-origin isolation (no service worker)', () => {
+  test.use({ serviceWorkers: 'block' });
+
+  test('Run and sleep() still work, Stop restarts Python, and input() explains itself', async ({ page }) => {
+    await page.goto('./');
+    await expect(page.locator('#run')).toHaveAttribute('data-state', 'idle', { timeout: 60_000 });
+    expect(await page.evaluate(() => crossOriginIsolated)).toBe(false);
+    await setCode(page, 'import time\nprint("a")\ntime.sleep(0.2)\nprint("b")\n');
+    await page.locator('#run').click();
+    await expect(term(page)).toContainText('Finished');
+    await setCode(page, 'while True:\n    pass\n');
+    await page.locator('#run').click();
+    await expect(page.locator('#run')).toHaveAttribute('data-state', 'running');
+    await page.locator('#run').click();
+    await expect(term(page)).toContainText('Stopped.');
+    // the button never claims it can run while Python restarts
+    await expect(page.locator('#run')).toHaveAttribute('data-state', /loading|idle/);
+    await expect(page.locator('#run')).toHaveAttribute('data-state', 'idle', { timeout: 60_000 });
+    await setCode(page, 'x = input("Name? ")\nprint(x)\n');
+    await page.locator('#run').click();
+    await expect(page.locator('.err-card')).toContainText(/input\(\)|reload/i);
+  });
+});

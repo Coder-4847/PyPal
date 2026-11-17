@@ -75,7 +75,7 @@ export function pypalBuild(): Plugin {
         .replace('__VERSION__', hash.digest('hex').slice(0, 12))
         .replace('__PYODIDE_VERSION__', String(pyManifest.version))
         .replace('__PRECACHE__', JSON.stringify(shell))
-        .replace('__CSP__', `${CSP}; frame-ancestors 'none'`);
+        .replace('__CSP__', JSON.stringify(`${CSP}; frame-ancestors 'none'`));
       writeFileSync(join(outDir, 'sw.js'), sw);
       writeFileSync(join(outDir, '404.html'), readFileSync('sw-src/404.template.html', 'utf8').replaceAll('__BASE__', base));
     },
