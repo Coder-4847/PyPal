@@ -87,7 +87,13 @@ const py = new PyClient(
       });
     },
     bootError(message) {
-      if (!booted) splash.error(message);
+      if (!booted) {
+        splash.error(
+          navigator.onLine
+            ? `PyPal couldn't download Python. Check your internet connection, then reload. (Details: ${message})`
+            : "You're offline and Python hasn't been downloaded yet. Connect once and reload; after that PyPal works offline too.",
+        );
+      }
       else term.status(`Python stopped: ${message}`, 'bad');
     },
     output: (stream, text, dropped) => term.write(stream, text, dropped),

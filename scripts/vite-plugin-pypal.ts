@@ -3,6 +3,25 @@ import { readFileSync, readdirSync, statSync, writeFileSync, existsSync } from '
 import { join, relative, sep } from 'node:path';
 import type { Plugin } from 'vite';
 
+/**
+ * Content-Security-Policy. Scripts only from this site (plus WebAssembly compilation for Python);
+ * network only to this site, the Pyodide package CDN and the two optional AI providers.
+ * Styles allow inline because the code editor injects its own style rules.
+ */
+export const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'wasm-unsafe-eval'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self'",
+  "connect-src 'self' https://cdn.jsdelivr.net https://api.anthropic.com https://api.openai.com",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'none'",
+].join('; ');
+
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -39,10 +58,9 @@ export function pypalBuild(): Plugin {
       order: 'post', // after Vite has handled the asset links, so these are left alone
       handler: (html) => {
         const site = siteUrl();
-        return {
-          html: html.replaceAll('__SITE_URL__', site || base),
-          tags: site ? [{ tag: 'link', attrs: { rel: 'canonical', href: site }, injectTo: 'head' as const }] : [],
-        };
+        const tags = [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: CSP }, injectTo: 'head-prepend' as const }];
+        if (site) tags.push({ tag: 'link', attrs: { rel: 'canonical', href: site } as Record<string, string>, injectTo: 'head' as const } as never);
+        return { html: html.replaceAll('__SITE_URL__', site || base), tags };
       },
     },
     closeBundle() {
@@ -56,7 +74,8 @@ export function pypalBuild(): Plugin {
       const sw = readFileSync('sw-src/sw.template.js', 'utf8')
         .replace('__VERSION__', hash.digest('hex').slice(0, 12))
         .replace('__PYODIDE_VERSION__', String(pyManifest.version))
-        .replace('__PRECACHE__', JSON.stringify(shell));
+        .replace('__PRECACHE__', JSON.stringify(shell))
+        .replace('__CSP__', `${CSP}; frame-ancestors 'none'`);
       writeFileSync(join(outDir, 'sw.js'), sw);
       writeFileSync(join(outDir, '404.html'), readFileSync('sw-src/404.template.html', 'utf8').replaceAll('__BASE__', base));
     },

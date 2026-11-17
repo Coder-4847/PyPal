@@ -52,6 +52,11 @@ describe('explain', () => {
     expect(e('AttributeError', "'str' object has no attribute 'uper'", 1, 'upper').hint).toContain('upper');
     expect(e('ModuleNotFoundError', "No module named 'requests'").title).toContain('requests');
   });
+  it('a crash of Python itself is explained, with the restart mentioned', () => {
+    const f = e('PythonCrash', 'RangeError: Maximum call stack size exceeded', null);
+    expect(f.title).toMatch(/crashed/);
+    expect(f.what).toMatch(/fresh Python/);
+  });
   it('RecursionError and unknown errors never throw', () => {
     expect(e('RecursionError', 'maximum recursion depth exceeded').title).toMatch(/itself/);
     const f = e('WeirdError', 'something odd');

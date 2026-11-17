@@ -12,6 +12,7 @@ import {
 import { tags as t } from '@lezer/highlight';
 import { motionScale } from '../motion/motion';
 import { pythonWords } from './completions';
+import { codePointsToUnits } from '../fix/lex';
 
 const highlight = HighlightStyle.define([
   { tag: [t.keyword, t.controlKeyword, t.operatorKeyword, t.definitionKeyword, t.moduleKeyword], color: 'var(--syn-keyword)' },
@@ -287,7 +288,7 @@ export function createEditor(opts: EditorOptions): EditorHandle {
     },
     offsetAt(line, col1) {
       const l = view.state.doc.line(clampLine(line));
-      return Math.min(l.to, l.from + Math.max(0, col1 - 1));
+      return Math.min(l.to, l.from + codePointsToUnits(l.text, Math.max(0, col1 - 1)));
     },
     lineEnd: (line) => view.state.doc.line(clampLine(line)).to,
     jumpToLine(line) {

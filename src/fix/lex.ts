@@ -155,11 +155,27 @@ export const lineStarts = (src: string): number[] => {
   return out;
 };
 
-/** Absolute offset of 1-based line / 1-based column (as Python reports them). */
+/**
+ * Absolute offset of a 1-based line / 1-based column as Python reports them. Python counts columns in
+ * code points; JavaScript strings count UTF-16 units, so an emoji earlier on the line shifts things.
+ */
 export function offsetOf(src: string, line: number, col1: number): number {
   const starts = lineStarts(src);
   const base = starts[Math.min(Math.max(line, 1), starts.length) - 1] ?? 0;
-  return Math.min(src.length, base + Math.max(0, col1 - 1));
+  const lineEnd = src.indexOf('\n', base) < 0 ? src.length : src.indexOf('\n', base);
+  return base + codePointsToUnits(src.slice(base, lineEnd), Math.max(0, col1 - 1));
+}
+
+/** UTF-16 length of the first `points` code points of `text` (past the end counts as plain units). */
+export function codePointsToUnits(text: string, points: number): number {
+  let units = 0;
+  let seen = 0;
+  for (const ch of text) {
+    if (seen >= points) return units;
+    units += ch.length;
+    seen++;
+  }
+  return units + Math.max(0, points - seen);
 }
 
 export const matchingCloser: Record<string, string> = { '(': ')', '[': ']', '{': '}' };

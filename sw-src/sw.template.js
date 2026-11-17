@@ -9,6 +9,8 @@
 const VERSION = '__VERSION__';
 const PYODIDE_VERSION = '__PYODIDE_VERSION__';
 const PRECACHE = __PRECACHE__;
+// The page and the Python workers get a real CSP header (a <meta> tag cannot cover workers or framing).
+const CSP = '__CSP__';
 
 const ROOT = new URL('./', self.location.href).href;
 const SHELL = `pypal-shell-${VERSION}`;
@@ -52,6 +54,9 @@ function isolate(res) {
   headers.set('Cross-Origin-Embedder-Policy', 'require-corp');
   headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   headers.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  headers.set('Content-Security-Policy', CSP);
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Referrer-Policy', 'no-referrer');
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
 }
 

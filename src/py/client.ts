@@ -124,6 +124,12 @@ export class PyClient {
         if (this.current && this.current.id === msg.id) {
           this.finish({ ok: msg.ok, stopped: msg.stopped, error: msg.error });
         }
+        if (msg.fatal) {
+          // that Python is broken for good: replace it
+          this.worker.terminate();
+          this.events.progress(0, 'Restarting Python');
+          this.spawn();
+        }
         break;
     }
   }

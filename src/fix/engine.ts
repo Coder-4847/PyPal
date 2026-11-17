@@ -152,16 +152,26 @@ async function fixWhole(original: string, env: FixEnv, opts: FixOptions): Promis
   for (let pass = 0; pass < maxPasses && diag; pass++) {
     const { bound, builtins } = await env.scope(cur);
     const ctx = makeCtx(cur, diag, bound, builtins);
+    // Prefer a candidate that makes this problem go away completely (the code compiles, or the
+    // runtime error is gone). Only if none does, take the first one that verifiably makes progress.
     let chosen: Candidate | null = null;
     let next: Diag | null = null;
+    let fallback: { cand: Candidate; next: Diag | null } | null = null;
     for (const cand of generateCandidates(ctx)) {
       if (seen.has(cand.code)) continue;
       const v = await verify(cur, cand, diag, env);
-      if (v.ok) {
+      if (!v.ok) continue;
+      const resolved = diag.kind === 'syntax' ? !v.next || v.next.kind === 'runtime' : !v.next;
+      if (resolved) {
         chosen = cand;
         next = v.next;
         break;
       }
+      fallback ??= { cand, next: v.next };
+    }
+    if (!chosen && fallback) {
+      chosen = fallback.cand;
+      next = fallback.next;
     }
     if (!chosen) break;
     reasons = carryReasons(cur.split('\n'), chosen.code.split('\n'), reasons, chosen.reason);

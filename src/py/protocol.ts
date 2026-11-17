@@ -38,7 +38,7 @@ export type FromWorker =
   | { type: 'out'; stream: 'out' | 'err'; text: string; dropped?: boolean }
   | { type: 'input-request'; prompt: string }
   | { type: 'packages'; state: 'start' | 'progress' | 'end'; label: string }
-  | { type: 'done'; id: number; ok: boolean; stopped: boolean; error: RunError | null }
+  | { type: 'done'; id: number; ok: boolean; stopped: boolean; error: RunError | null; fatal?: boolean }
   | { type: 'analyze-result'; id: number; diag: Diag | null }
   | { type: 'scope-result'; id: number; bound: string[]; builtins: string[] };
 

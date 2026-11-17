@@ -254,6 +254,15 @@ export function explain(e: ErrorInfo): Friendly {
         hint: 'Make sure there is a case where the function returns without calling itself.',
         line,
       };
+    case 'PythonCrash':
+    case 'WorkerCrash':
+    case 'InternalError':
+      return {
+        title: 'Python itself crashed',
+        what: 'Something in the program made Python stop completely, usually very deep recursion or a huge amount of data. PyPal has started a fresh Python for you.',
+        hint: 'Look for a function that keeps calling itself, a loop that keeps growing a list, or a very large number. Then press Run again.',
+        line,
+      };
     case 'EOFError':
       return { title: 'input() had nothing to read', what: 'The program asked for input but none was given.', hint: 'Type an answer in the terminal and press Enter.', line };
     case 'MemoryError':

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { deflateRawSync } from 'node:zlib';
-import { expect, test, type BrowserContext, type Page } from '@playwright/test';
+import { expect, test, type BrowserContext, type Page } from './fixtures';
 
 async function open(page: Page, url = './') {
   await page.goto(url);
@@ -93,13 +93,16 @@ test.describe('files and sharing', () => {
   });
 
   test('share link round-trips through the URL hash and keeps the previous code restorable', async ({ page, context }) => {
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    // capture what would be copied, in a way every browser supports
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: async (t: string) => { (window as any).__copied = t; } }, configurable: true });
+    });
     await open(page);
     await setCode(page, 'print("shared \u{1F40D}")\n');
     await page.locator('#menu-file').click();
     await page.getByRole('menuitem', { name: 'Copy share link' }).click();
     await expect(page.locator('.toast').last()).toContainText('Link copied');
-    const url = await page.evaluate(() => navigator.clipboard.readText());
+    const url = await page.evaluate(() => (window as any).__copied as string);
     expect(url).toContain('#c=v1.');
 
     const page2 = await context.newPage();

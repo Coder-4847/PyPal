@@ -185,14 +185,22 @@ async function run(id: number, code: string) {
       post({ type: 'done', id, ok: false, stopped: true, error: null });
       return;
     }
+    // After some crashes (a WebAssembly stack overflow, running out of memory) this Python can no
+    // longer run anything. Say so, so the page can start a fresh one.
+    let fatal = false;
+    try {
+      pyodide.runPython('1');
+    } catch {
+      fatal = true;
+    }
     const err: RunError = {
       kind: 'runtime',
-      type: 'InternalError',
+      type: fatal ? 'PythonCrash' : 'InternalError',
       message: e instanceof Error ? e.message : String(e),
       lineno: null, offset: null, endLineno: null, endOffset: null, text: null, suggestion: null,
       traceback: e instanceof Error ? (e.stack ?? e.message) : String(e),
     };
-    post({ type: 'done', id, ok: false, stopped: false, error: err });
+    post({ type: 'done', id, ok: false, stopped: false, error: err, fatal });
   }
 }
 

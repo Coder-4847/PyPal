@@ -126,7 +126,19 @@ const ruleColon: Rule = (ctx) => {
   const last = logicalLineEnd(toks, diag.lineno);
   if (!last || isOp(last, ':')) return [];
   const kw = first && COMPOUND.has(first.text) ? first.text : 'this line';
-  return [edit(ctx, last.end, last.end, ':', `Added the missing colon after '${kw}'`, 'colon')];
+  const reason = `Added the missing colon after '${kw}'`;
+  const out: Candidate[] = [];
+  // a one-line statement (`for x in xs print(x)`): the colon goes where Python points, before the body
+  if (diag.offset) {
+    const at = offsetOf(ctx.code, diag.lineno, diag.offset);
+    const tok = ctx.ct.find((t) => t.start === at && t.line === diag.lineno);
+    if (tok && tok !== first && tok.start < last.start) {
+      const prev = ctx.ct[ctx.ct.indexOf(tok) - 1];
+      if (prev && !isOp(prev, ':')) out.push(edit(ctx, prev.end, prev.end, ':', reason, 'colon'));
+    }
+  }
+  out.push(edit(ctx, last.end, last.end, ':', reason, 'colon'));
+  return out;
 };
 
 const ruleBrackets: Rule = (ctx) => {
@@ -249,7 +261,15 @@ const ruleIndent: Rule = (ctx) => {
     const hdr = block[2] ? Number(block[2]) : Math.max(1, L - 1);
     const hdrText = lines[hdr - 1] ?? '';
     const want = leadingWs(hdrText) + unit;
-    const body = lines[L - 1];
+    const body = L > hdr ? lines[L - 1] : undefined; // Python points at the header itself when the file ends
+    const addPass = () => {
+      const copy = [...lines];
+      copy.splice(hdr, 0, want + 'pass');
+      return { code: copy.join('\n'), reason: "Added 'pass' so the empty block has a body", rule: 'indent-pass', lines: [hdr] };
+    };
+    // A blank line between the header and the next code suggests that code was meant to come after the block.
+    const gap = L > hdr + 1 && lines.slice(hdr, L - 1).every(isBlank);
+    if (gap) out.push(addPass());
     if (body !== undefined && !isBlank(body) && L > hdr) {
       const isDef = /^\s*(def|class)\b/.test(hdrText);
       const one = setIndent(ctx, L, want, 'Indented this line so it sits inside the block', 'indent-body');
@@ -257,10 +277,13 @@ const ruleIndent: Rule = (ctx) => {
       if (isDef) {
         const copy = [...lines];
         const base = leadingWs(body);
+        const defName = /^\s*(?:def|class)\s+([A-Za-z_]\w*)/.exec(hdrText)?.[1];
+        const callsIt = defName ? new RegExp(`(^|[^\\w.])${defName}\\s*\\(`) : null;
         for (let k = L - 1; k < copy.length; k++) {
           const t = copy[k];
           if (isBlank(t) || leadingWs(t).length < base.length) break; // a blank line ends the block
           if (leadingWs(t) === base && /^(def|class)\b/.test(t.trim()) && k > L - 1) break;
+          if (k > L - 1 && callsIt && callsIt.test(t)) break; // a call of the function is not part of its body
           copy[k] = want + t.slice(base.length);
         }
         many = { code: copy.join('\n'), reason: 'Indented the lines of the block so they sit inside it', rule: 'indent-block', lines: [L] };
@@ -268,11 +291,7 @@ const ruleIndent: Rule = (ctx) => {
       if (many) out.push(many);
       if (one) out.push(one);
     }
-    if (body === undefined || isBlank(body) || L > lines.length) {
-      const copy = [...lines];
-      copy.splice(hdr, 0, want + 'pass');
-      out.push({ code: copy.join('\n'), reason: "Added 'pass' so the empty block has a body", rule: 'indent-pass', lines: [hdr] });
-    }
+    if (!gap && (body === undefined || isBlank(body) || L > lines.length)) out.push(addPass());
     return out;
   }
 
@@ -315,6 +334,23 @@ const ruleIndent: Rule = (ctx) => {
       if (c) out.push(c);
     }
     return out;
+  }
+
+  // `else:` indented like the body it follows: line it up with its `if` (or try / for / while)
+  const branch = L ? /^(\s*)(else|elif|except|finally)\b/.exec(lines[L - 1] ?? '') : null;
+  if (branch && diag.message === 'invalid syntax') {
+    const cur = branch[1].length;
+    for (let k = L - 2; k >= 0; k--) {
+      const t = lines[k];
+      if (isBlank(t)) continue;
+      const ind = leadingWs(t);
+      if (ind.length < cur && /^(if|elif|try|except|for|while)\b/.test(t.trim())) {
+        const c = setIndent(ctx, L, ind, `Lined up '${branch[2]}' with the '${t.trim().split(/[\s:(]/)[0]}' it belongs to`, 'indent-branch');
+        if (c) out.push(c);
+        break;
+      }
+      if (ind.length < cur) break;
+    }
   }
 
   if (diag.type === 'TabError' || /inconsistent use of tabs/.test(diag.message)) {
@@ -471,6 +507,15 @@ const ruleNameError: Rule = (ctx) => {
   const pool = [...ctx.bound, ...[...ctx.builtins].filter((b) => /^[a-z]/.test(b) || b === 'True')];
   for (const name of pool) {
     if (name !== X && name.toLowerCase() === lower) push(replaceAll(ctx, occ, name, `Capital letters matter in Python: it's '${name}'`, 'case'));
+  }
+  // The typo may be where the name is created (`tottal = 0`, then `total` used everywhere after):
+  // then fix that one spot instead of "fixing" every correct use to match it.
+  const uses = (n: string) => ctx.ct.filter((t, i) => t.type === 'name' && t.text === n && !isOp(ctx.ct[i - 1], '.')).length;
+  for (const { name: B } of nearest(X, [...ctx.bound], 2)) {
+    if (uses(X) > uses(B)) {
+      const defs = ctx.ct.filter((t, i) => t.type === 'name' && t.text === B && !isOp(ctx.ct[i - 1], '.'));
+      push(multiEdit(ctx, defs.map((t) => ({ start: t.start, end: t.end, text: X })), `Changed '${B}' to '${X}' so it matches the name used later`, 'typo-definition'));
+    }
   }
   if (diag.suggestion && diag.suggestion !== X) push(replaceAll(ctx, occ, diag.suggestion, `Changed '${X}' to '${diag.suggestion}' (spelling)`, 'typo'));
   for (const { name } of nearest(X, pool, 4)) push(replaceAll(ctx, occ, name, `Changed '${X}' to '${name}' (spelling)`, 'typo'));
