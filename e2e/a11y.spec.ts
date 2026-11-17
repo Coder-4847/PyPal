@@ -3,6 +3,10 @@ import { createRequire } from 'node:module';
 
 const axePath = createRequire(import.meta.url).resolve('axe-core/axe.min.js');
 
+// axe is injected as an inline script, which PyPal's Content-Security-Policy rightly blocks:
+// let the audit tool through (the CSP itself is tested in security.spec.ts).
+test.use({ bypassCSP: true });
+
 async function open(page: Page) {
   await page.goto('./');
   await expect(page.locator('#run')).toHaveAttribute('data-state', 'idle');

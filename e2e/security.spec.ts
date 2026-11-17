@@ -35,9 +35,13 @@ test('the Content-Security-Policy is in force and nothing PyPal does violates it
   await expect(page.locator('#fix-sheet .hunk')).toHaveCount(1);
   await page.keyboard.press('Escape');
   await page.keyboard.press('Control+k');
+  await expect(page.getByRole('combobox', { name: 'Search commands' })).toBeVisible();
   await page.keyboard.press('Escape');
+  await expect(page.getByRole('combobox', { name: 'Search commands' })).toBeHidden();
   await page.locator('#open-settings').click();
+  await expect(page.locator('#settings')).toBeVisible();
   await page.keyboard.press('Escape');
+  await expect(page.locator('#settings')).toBeHidden();
   await page.locator('#theme').click();
   await page.waitForTimeout(800);
   const events = await page.evaluate(() => (window as any).__csp ?? []);

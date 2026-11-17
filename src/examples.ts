@@ -98,5 +98,3 @@ pritn("The total is", total)
 `,
   },
 ];
-
-export const exampleById = (id: string) => EXAMPLES.find((e) => e.id === id);

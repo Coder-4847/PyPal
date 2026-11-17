@@ -20,10 +20,6 @@ export class RunButton {
     this.apply('loading');
   }
 
-  get current() {
-    return this.state;
-  }
-
   private apply(state: RunState) {
     // never show "Run" while Python is (re)starting: a click would do nothing
     if (state === 'idle' && !this.handlers.isReady()) state = 'loading';

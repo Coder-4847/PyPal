@@ -478,7 +478,17 @@ const commands = (): Command[] => [
   { id: 'shortcuts', title: 'Keyboard shortcuts', group: 'Help', keys: '?', run: openShortcutsDialog },
   { id: 'install', title: 'Install PyPal as an app', group: 'Help', enabled: () => installEvent !== null, run: installApp },
 ];
-const openPalette = async () => (await import('./ui/palette')).openPalette(commands);
+// The palette loads on first use: an Escape pressed before it appears cancels the request.
+let paletteWanted = false;
+const openPalette = async () => {
+  paletteWanted = true;
+  const m = await import('./ui/palette');
+  if (paletteWanted) m.openPalette(commands);
+  paletteWanted = false;
+};
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') paletteWanted = false;
+}, true);
 
 const examplesMenu = (): MenuItem[] => EXAMPLES.map((e) => ({ id: e.id, label: e.title, hint: e.blurb, run: () => loadExample(e) }));
 const fileMenu = (): MenuItem[] => [

@@ -243,11 +243,4 @@ export class Terminal {
     if (this.input) this.finishInput(null);
   }
 
-  get awaitingInput() {
-    return this.input !== null;
-  }
-
-  focusInput() {
-    this.input?.field.focus();
-  }
 }

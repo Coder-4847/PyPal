@@ -26,10 +26,6 @@ export class FixController {
 
   constructor(private d: Deps) {}
 
-  get isBusy() {
-    return this.busy;
-  }
-
   fixAll() {
     return this.run(undefined);
   }

@@ -179,7 +179,6 @@ export function codePointsToUnits(text: string, points: number): number {
 }
 
 export const matchingCloser: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
-export const matchingOpener: Record<string, string> = { ')': '(', ']': '[', '}': '{' };
 
 /** Tokens that are not comments or newlines. */
 export const codeTokens = (toks: Tok[]) => toks.filter((t) => t.type !== 'comment' && t.type !== 'newline');
@@ -199,16 +198,6 @@ export function logicalLineEnd(toks: Tok[], line: number): Tok | null {
     last = t;
   }
   return last;
-}
-
-/** Index in `toks` of the token starting at or after a 1-based line/column. */
-export function tokenAt(toks: Tok[], src: string, line: number, col1: number): number {
-  const off = offsetOf(src, line, col1);
-  return toks.findIndex((t) => t.end > off && t.type !== 'newline');
-}
-
-export function lineText(src: string, line: number): string {
-  return src.split('\n')[line - 1] ?? '';
 }
 
 export function replaceRange(src: string, start: number, end: number, text: string): string {
