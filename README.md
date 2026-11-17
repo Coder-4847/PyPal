@@ -2,6 +2,14 @@
 
 **Your Python pal.** A free Python editor that runs entirely in your browser. Real Python (Pyodide), no sign-in, no backend, no ads.
 
+Live: https://coder-4847.github.io/PyPal/
+
+| Friendly errors | One-click fixes, each with a reason |
+| --- | --- |
+| ![An error explained in plain English, with the line marked in the editor](docs/screenshots/error-card.png) | ![The fix preview: three changes, each with a one-line reason, ready to accept or skip](docs/screenshots/fix-preview.png) |
+| **Real Python, with input()** | **On a phone** |
+| ![Dark theme, a program asking questions in the terminal](docs/screenshots/dark-input.png) | ![The phone layout with the fix preview open](docs/screenshots/phone.png) |
+
 **Features so far**
 
 - Editor, real Python in a Web Worker, Run/Stop, inline `input()`, automatic package loading, resizable layout, light/dark theme, autosave.
@@ -44,7 +52,16 @@ E2E_URL=https://<user>.github.io/<repo>/ npm run test:e2e   # the same suite aga
 npm run build       # type-check, build, and enforce the bundle budget (scripts/check-budget.mjs)
 ```
 
-`?motion=slow` slows every animation 5x so it can be reviewed frame by frame.
+The e2e suite has four projects: `chromium`, `firefox`, `webkit` and `phone` (Pixel 7). Pick one with `--project=webkit`. If HTTPS goes through an intercepting proxy, point `PW_FIREFOX_PROFILE` at a Firefox profile whose NSS store trusts its CA (Chromium and WebKit use the system store).
+
+`?motion=slow` slows every animation 5x so it can be reviewed frame by frame. `node scripts/motion-audit.mjs` records frame times for each animated moment; `node scripts/screenshots.mjs` regenerates the README screenshots.
+
+## Security
+
+- No backend and no accounts. Code, settings and the optional AI key live in your browser's localStorage.
+- Content-Security-Policy: scripts only from the site (plus WebAssembly for Python); network only to the site, the Pyodide CDN and the two optional AI providers; no framing. Sent as a header by the service worker (covering the Python workers) and as a meta tag on the first visit.
+- Everything shown on screen (program output, error messages, shared links, file names, AI notes) is inserted as text, never as HTML.
+- The AI key is sent only to the provider you chose, only when you ask for an AI fix, and is never logged or cached.
 
 ## The fix engine
 

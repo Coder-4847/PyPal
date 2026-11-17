@@ -229,3 +229,20 @@ test('neighbouring fixes are separate changes, each with its own reason', async 
   await expect(reasons.nth(1)).toContainText("'nmae' to 'name'");
   await expect(reasons.nth(2)).toContainText("colon after 'if'");
 });
+
+test('diff cards are never squeezed: every Accept and Skip button is fully visible when scrolled to', async ({ page }) => {
+  await open(page);
+  await setCode(page, 'def greet(name)\n    print("Hello, " + name + "!")\n\ngreet("Ada")\nage = input("How old are you? ")\nif age > 12:\n    print("Teenager or older")\npritn("Done")\n');
+  await expect(fixAllBtn(page)).toHaveAttribute('data-visible', 'true');
+  await fixAllBtn(page).click();
+  const cards = sheet(page).locator('.hunk');
+  await expect(cards).toHaveCount(3);
+  await page.waitForTimeout(1200);
+  for (let i = 0; i < 3; i++) {
+    const card = cards.nth(i);
+    await card.scrollIntoViewIfNeeded();
+    const c = await card.boundingBox();
+    const b = await card.getByRole('button', { name: /^Accept this change/ }).boundingBox();
+    expect(b!.y + b!.height).toBeLessThanOrEqual(c!.y + c!.height + 0.5);
+  }
+});

@@ -304,6 +304,8 @@ body.resizing .editor-host, body.resizing .term { pointer-events: none; }
 
 /* theme switch: circular reveal (new view clips open over the old one) */
 ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+/* the browser's default root animation (size and filter) is a no-op here: switch it off, only our clip-path runs */
+::view-transition-group(root) { animation: none; }
 ::view-transition-old(root) { z-index: 1; }
 ::view-transition-new(root) { z-index: 2; }
 .term-line .user-input { color: var(--accent); }

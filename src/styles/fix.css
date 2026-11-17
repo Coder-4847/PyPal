@@ -42,7 +42,7 @@
 .cm-squiggle-new::after { animation: squiggle-in var(--dur-4) var(--ease-emphasized) backwards; }
 @keyframes squiggle-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 .cm-err-pulse { animation: dot-pulse var(--dur-4) var(--ease-spring) 1; }
-@keyframes dot-pulse { 0% { transform: scale(0.4); } 45% { transform: scale(1.9); box-shadow: 0 0 0 4px var(--danger-soft); } 100% { transform: scale(1); } }
+@keyframes dot-pulse { 0% { transform: scale(0.4); } 45% { transform: scale(1.9); } 100% { transform: scale(1); } }
 .cm-errorLine { animation: line-flash var(--dur-4) var(--ease-standard) 1; }
 @keyframes line-flash { 0% { background-color: color-mix(in srgb, var(--danger) 28%, transparent); } 100% { background-color: var(--danger-soft); } }
 
@@ -84,12 +84,12 @@
 .sheet-busy { display: flex; align-items: center; gap: var(--space-3); color: var(--text-muted); font-size: var(--text-sm); padding: var(--space-2); }
 .spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border-strong); border-top-color: var(--accent); animation: spin calc(800ms * var(--motion-scale)) linear infinite; }
 @media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-top-color: var(--border-strong); } }
-.sheet-fail { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-2); }
+.sheet-fail { flex: none; display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); padding: var(--space-2); }
 .sheet-fail .err-line { font-size: var(--text-xs); color: var(--text-muted); }
 .sheet-fail p { color: var(--text); }
 .sheet-fail .err-hint { color: var(--text-muted); }
 
-.hunk { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
+.hunk { flex: none; /* never squeezed by the scrolling list: its buttons must stay whole */ border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); overflow: hidden; }
 .hunk-head { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); align-items: baseline; padding: var(--space-2) var(--space-3); background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
 .hunk-line { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-muted); }
 .hunk-reason { font-weight: 550; color: var(--text); }
