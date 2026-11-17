@@ -108,7 +108,10 @@ test('Stop while the program waits for input', async ({ page }) => {
   await expect(term(page)).toContainText('next');
 });
 
-test('if Python cannot be downloaded, the intro says so plainly and offers a reload', async ({ page, context }) => {
+test('if Python cannot be downloaded, the intro says so plainly and offers a reload', async ({ page, context, browserName }) => {
+  // Playwright cannot block a worker's requests in WebKit over HTTPS, so the failure cannot be simulated
+  // there against the live site; the same check runs in WebKit against the local build.
+  test.skip(browserName === 'webkit' && Boolean(process.env.E2E_URL), 'request blocking does not reach workers in WebKit over HTTPS');
   await context.route(/\/pyodide\//, (r) => r.abort('internetdisconnected'));
   await page.goto('./');
   await expect(page.locator('#splash-error')).toBeVisible({ timeout: 60_000 });
