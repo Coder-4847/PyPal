@@ -33,11 +33,13 @@
 .btn-fix svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .btn-fix.is-busy svg { animation: pulse-soft calc(900ms * var(--motion-scale)) var(--ease-standard) infinite; }
 @keyframes pulse-soft { 50% { opacity: 0.35; } }
-@media (prefers-reduced-motion: reduce) { .btn-fix.is-busy svg { animation: none; } .cm-squiggle-new, .cm-err-pulse { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .btn-fix.is-busy svg { animation: none; } .cm-squiggle-new::after, .cm-err-pulse { animation: none; } }
 
 /* ---------- squiggles, gutter dot, tooltips (moment 4) ---------- */
-.cm-squiggle { background-image: var(--squiggle); background-repeat: repeat-x; background-position: left bottom; padding-bottom: 2px; }
-.cm-squiggle-new { animation: squiggle-in var(--dur-4) var(--ease-emphasized) backwards; }
+.cm-squiggle { position: relative; }
+/* the underline is its own layer, so drawing it in never clips the code itself */
+.cm-squiggle::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background-image: var(--squiggle); background-repeat: repeat-x; pointer-events: none; }
+.cm-squiggle-new::after { animation: squiggle-in var(--dur-4) var(--ease-emphasized) backwards; }
 @keyframes squiggle-in { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 .cm-err-pulse { animation: dot-pulse var(--dur-4) var(--ease-spring) 1; }
 @keyframes dot-pulse { 0% { transform: scale(0.4); } 45% { transform: scale(1.9); box-shadow: 0 0 0 4px var(--danger-soft); } 100% { transform: scale(1); } }

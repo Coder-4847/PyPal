@@ -94,7 +94,7 @@ button { font: inherit; color: inherit; }
   font-size: var(--text-md);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color var(--dur-2) var(--ease-standard), transform var(--dur-1) var(--ease-standard);
+  transition: background-color var(--dur-2) var(--ease-standard), color var(--dur-2) var(--ease-standard), transform var(--dur-1) var(--ease-standard);
   --ctl-radius: var(--radius-md);
 }
 .run::after { content: ''; position: absolute; inset: -3px; border: 2px solid var(--focus-ring); border-radius: calc(var(--radius-md) + 3px); opacity: 0; transform: scale(calc(1 - var(--move) * 0.04)); transition: opacity var(--dur-2) var(--ease-standard), transform var(--dur-2) var(--ease-spring); pointer-events: none; }
