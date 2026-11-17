@@ -65,7 +65,9 @@ for (const scheme of ['light', 'dark'] as const) {
       await audit(page, 'palette');
       await page.keyboard.press('Escape');
       await page.waitForTimeout(400);
-      await page.locator('#open-shortcuts').click();
+      // the shortcut button is hidden on phones (no keyboard); the ? key opens the same sheet
+      if (await page.locator('#open-shortcuts').isVisible()) await page.locator('#open-shortcuts').click();
+      else await page.keyboard.press('?');
       await page.waitForTimeout(500);
       await audit(page, 'shortcut sheet');
     });

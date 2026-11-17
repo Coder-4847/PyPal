@@ -27,12 +27,13 @@ export class RunButton {
   private apply(state: RunState) {
     this.state = state;
     this.el.dataset.state = state;
+    // each name starts with the word on screen (the accessible name must contain the visible text)
     const labels: Record<RunState, string> = {
-      loading: 'Python is starting',
-      idle: 'Run code',
+      loading: 'Loading Python',
+      idle: 'Run the program',
       running: 'Stop the program',
-      success: 'Finished without errors',
-      error: 'Finished with an error',
+      success: 'Done, finished without errors',
+      error: 'Error, the program stopped with an error',
     };
     this.el.setAttribute('aria-label', labels[state]);
     this.el.setAttribute('aria-busy', String(state === 'loading' || state === 'running'));

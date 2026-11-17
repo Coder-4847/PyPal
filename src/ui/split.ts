@@ -52,10 +52,9 @@ export function initSplit(workspace: HTMLElement, divider: HTMLElement) {
   };
   divider.addEventListener('keydown', (e) => {
     glide();
-    const dec = mobile.matches ? 'ArrowUp' : 'ArrowLeft';
-    const inc = mobile.matches ? 'ArrowDown' : 'ArrowRight';
-    if (e.key === dec) set(value - 3, true);
-    else if (e.key === inc) set(value + 3, true);
+    // Left/Up shrink the first pane and Right/Down grow it, whichever way the panes are stacked
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') set(value - 3, true);
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') set(value + 3, true);
     else if (e.key === 'Home') set(20, true);
     else if (e.key === 'End') set(80, true);
     else return;

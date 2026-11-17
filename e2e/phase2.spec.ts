@@ -187,20 +187,23 @@ test('settings: the key is stored locally, removable, and the AI tier is hidden 
   await expect(sheet(page)).not.toContainText(/AI/);
 });
 
-test('AI tier: answers are verified before they are shown', async ({ page }) => {
+test('AI tier: answers are verified before they are shown', async ({ page, browserName }) => {
   await open(page);
   await page.evaluate(() => localStorage.setItem('pypal:ai', JSON.stringify({ provider: 'anthropic', apiKey: 'sk-test', model: 'm' })));
-  let calls = 0;
-  await page.context().route('https://api.anthropic.com/**', async (route) => {
-    calls++;
-    const code = calls === 1 ? 'banana = "yellow"\nprint(banana)\n' : 'print(banana\n'; // 2nd answer does not compile
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      headers: { 'access-control-allow-origin': '*' },
-      body: JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ code, notes: [{ line: 1, reason: 'Created banana before using it' }] }) }] }),
-    });
+  // Mock the provider inside the page: Playwright cannot intercept a service-worker-controlled page's
+  // requests in every browser, and this test is about what PyPal does with the answer.
+  await page.evaluate(() => {
+    const real = window.fetch.bind(window);
+    (window as any).__aiCalls = 0;
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (!url.startsWith('https://api.anthropic.com/')) return real(input, init);
+      const n = ++(window as any).__aiCalls;
+      const code = n === 1 ? 'banana = "yellow"\nprint(banana)\n' : 'print(banana\n'; // 2nd answer does not compile
+      return new Response(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify({ code, notes: [{ line: 1, reason: 'Created banana before using it' }] }) }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+    };
   });
+  void browserName;
   await setCode(page, 'print(banana)\n');
   await page.locator('#run').click();
   await expect(page.locator('.err-card')).toBeVisible();
@@ -212,7 +215,7 @@ test('AI tier: answers are verified before they are shown', async ({ page }) => 
   await fixAllBtn(page).click();
   await expect(sheet(page)).toContainText("couldn't fix");
   await expect(sheet(page).locator('.hunk')).toHaveCount(0);
-  expect(calls).toBe(2);
+  expect(await page.evaluate(() => (window as any).__aiCalls)).toBe(2);
 });
 
 test('neighbouring fixes are separate changes, each with its own reason', async ({ page }) => {

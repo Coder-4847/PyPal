@@ -11,9 +11,14 @@ const setCode = (page: Page, code: string) => page.evaluate((c) => (window as an
 const getCode = (page: Page) => page.evaluate(() => (window as any).__pypal.editor.getCode() as string);
 const term = (page: Page) => page.locator('#term');
 
-/** Cut the network for the page AND its service worker. */
-async function goOffline(ctx: BrowserContext) {
-  await ctx.route('**/*', (route) => route.abort('internetdisconnected'));
+/**
+ * Cut the network for the page AND its service worker. In Chromium, routing reaches the service
+ * worker's own requests; in Firefox and WebKit it does not (and WebKit would block the reload
+ * itself), so there the browser's offline mode is used.
+ */
+async function goOffline(ctx: BrowserContext, browserName: string) {
+  if (browserName === 'chromium') await ctx.route('**/*', (route) => route.abort('internetdisconnected'));
+  else await ctx.setOffline(true);
 }
 
 test.describe('examples and menus', () => {
@@ -68,7 +73,7 @@ test('a menu opened with the mouse still closes on Escape and on an outside clic
   await expect(page.getByRole('menu')).toBeHidden();
   await page.locator('#menu-examples').click();
   await expect(page.getByRole('menu')).toBeVisible();
-  await page.locator('.cm-content').click();
+  await page.locator('#term').click({ position: { x: 10, y: 10 } });
   await expect(page.getByRole('menu')).toBeHidden();
 });
 
@@ -202,7 +207,7 @@ test.describe('command palette and shortcuts', () => {
 });
 
 test.describe('offline and install', () => {
-  test('after the first visit PyPal works with no network, including packages used before', async ({ page, context }) => {
+  test('after the first visit PyPal works with no network, including packages used before', async ({ page, context, browserName }) => {
     await open(page);
     // use numpy once while online so its wheel is cached
     await setCode(page, 'import numpy as np\nprint(np.arange(5).sum())\n');
@@ -211,10 +216,11 @@ test.describe('offline and install', () => {
     await expect.poll(() => page.evaluate(async () => (await caches.keys()).filter((k) => k.startsWith('pypal-')).length)).toBeGreaterThanOrEqual(3);
     expect(await page.evaluate(() => Boolean(navigator.serviceWorker.controller))).toBe(true);
 
-    await goOffline(context);
+    await goOffline(context, browserName);
     await page.reload();
     await expect(page.locator('#run')).toHaveAttribute('data-state', 'idle', { timeout: 60_000 });
-    await expect(page.locator('#net-chip')).toBeHidden(); // route-level offline: the browser still says online
+    if (browserName === 'chromium') await expect(page.locator('#net-chip')).toBeHidden(); // route-level offline: the browser still says online
+    else await expect(page.locator('#net-chip')).toBeVisible();
     await setCode(page, 'print("offline ok")\n');
     await page.locator('#run').click();
     await expect(term(page)).toContainText('offline ok');
