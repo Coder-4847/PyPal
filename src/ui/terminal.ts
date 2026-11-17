@@ -26,7 +26,7 @@ export class Terminal {
   constructor(private root: HTMLElement) {
     this.empty = document.createElement('p');
     this.empty.className = 'term-empty';
-    this.empty.innerHTML = 'Press <kbd>Run</kbd> or <kbd>Ctrl</kbd> <kbd>Enter</kbd> to see your program’s output here.';
+    this.empty.innerHTML = 'Press <kbd>Run</kbd><span class="hint-keys"> or <kbd>Ctrl</kbd> <kbd>Enter</kbd></span> to see your program’s output here.';
     this.root.append(this.empty);
   }
 

@@ -152,9 +152,10 @@ export class FixSheet {
     this.focusFirst();
   }
 
+  /** Keyboard and screen-reader users land on the sheet's main action right away. This must not be delayed: a late focus move would steal keystrokes from someone already typing again. */
   private focusFirst() {
     const first = this.actions.querySelector<HTMLElement>('[data-act="accept-all"], [data-act="close"]');
-    window.setTimeout(() => first?.focus({ preventScroll: true }), 60);
+    first?.focus({ preventScroll: true });
   }
 
   /* ---------- the preview list ---------- */

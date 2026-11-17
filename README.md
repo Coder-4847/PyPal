@@ -9,6 +9,10 @@
 - **Live syntax check:** problems are underlined as you type; hover for a plain-English message.
 - **One-click fixes:** *Fix all errors* (or select lines and use *Fix errors in these lines*). Every change in the diff preview has a one-line reason; accept all, accept one, or reject, and Undo works afterwards.
 - **Honest by design:** a fix is only offered if Python verifies it. Otherwise PyPal says what looks wrong and where.
+- **Starters, sharing, files:** six tiny examples (one deliberately broken, to try Fix on), a share link (your code is compressed into the URL hash, no server), download and open `.py` files (also by drag and drop).
+- **Command palette** (Ctrl/Cmd+K), a shortcut sheet (`?`), menus, light/dark theme.
+- **Works offline** after the first visit (the app, Python and any package you have used are cached) and can be installed as an app.
+- **Accessible:** full keyboard use (Escape then Tab leaves the editor), screen-reader announcements for results, errors and fixes, AA contrast in both themes, reduced-motion support.
 - **Optional AI help:** add your own key in Settings. It is stored only in your browser and sent only to the provider; there is no shared key and no PyPal server.
 
 ## Develop
@@ -30,6 +34,17 @@ npm run test:e2e   # Playwright (builds and serves dist/ like GitHub Pages does)
 - **Stop:** sets Pyodide's interrupt buffer. If Python does not react within 1.5 s (or the page is not cross-origin isolated) the worker is restarted.
 - **Isolation on GitHub Pages:** Pages cannot send COOP/COEP headers, so `public/sw.js` adds them (the page reloads once on the first visit).
 - **Packages:** `import numpy` (and other Pyodide packages) loads automatically from the matching jsDelivr release.
+
+## Tests and checks
+
+```bash
+npm test            # Vitest: fix engine + 96-case fixture corpus (boots Pyodide in Node), share links, examples, explanations
+npm run test:e2e    # Playwright: features, offline, axe accessibility audits in both themes, motion
+E2E_URL=https://<user>.github.io/<repo>/ npm run test:e2e   # the same suite against a live site
+npm run build       # type-check, build, and enforce the bundle budget (scripts/check-budget.mjs)
+```
+
+`?motion=slow` slows every animation 5x so it can be reviewed frame by frame.
 
 ## The fix engine
 

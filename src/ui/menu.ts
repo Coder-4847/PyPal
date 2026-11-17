@@ -37,7 +37,10 @@ export class Menu {
 
     button.addEventListener('click', () => (this.isOpen ? this.close() : this.open(false)));
     button.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (e.key === 'Escape' && this.isOpen) {
+        e.preventDefault();
+        this.close();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();
         this.open(true, e.key === 'ArrowUp');
       }

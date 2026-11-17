@@ -66,9 +66,13 @@
   .hide-narrow { display: none; }
   .topbar-end { gap: var(--space-1); }
   .palette { margin-top: var(--space-6); }
-  .fix-sheet { left: var(--space-2); right: var(--space-2); bottom: var(--space-2); max-height: 70%; }
+  /* on a phone the preview gets the bottom of the screen, not just the short editor pane */
+  .fix-sheet { position: fixed; left: var(--space-2); right: var(--space-2); bottom: var(--space-2); max-height: 64dvh; }
   .net-chip { display: none; }
 }
 @media (max-width: 420px) {
   .run { min-width: 88px; padding: 0 var(--space-3) 0 var(--space-2); }
 }
+
+/* touch screens have no Ctrl key: the hint only mentions the Run button there */
+@media (pointer: coarse) { .term-empty .hint-keys { display: none; } }

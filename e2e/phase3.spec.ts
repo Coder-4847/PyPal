@@ -60,6 +60,18 @@ test.describe('examples and menus', () => {
   });
 });
 
+test('a menu opened with the mouse still closes on Escape and on an outside click', async ({ page }) => {
+  await open(page);
+  await page.locator('#menu-file').click();
+  await expect(page.getByRole('menu')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('menu')).toBeHidden();
+  await page.locator('#menu-examples').click();
+  await expect(page.getByRole('menu')).toBeVisible();
+  await page.locator('.cm-content').click();
+  await expect(page.getByRole('menu')).toBeHidden();
+});
+
 test.describe('files and sharing', () => {
   test('download gives main.py with the code', async ({ page }) => {
     await open(page);
